@@ -47664,36 +47664,139 @@
 },{}],2:[function(require,module,exports){
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+/**
+ * @author alteredq / http://alteredqualia.com/
+ * @author mr.doob / http://mrdoob.com/
+ */
+
+var Detector = {
+
+		canvas: !!window.CanvasRenderingContext2D,
+		webgl: function () {
+
+				try {
+
+						var canvas = document.createElement('canvas');return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+				} catch (e) {
+
+						return false;
+				}
+		}(),
+		webgl2: function () {
+
+				try {
+
+						var canvas = document.createElement('canvas');return !!(window.WebGL2RenderingContext && canvas.getContext('webgl2'));
+				} catch (e) {
+
+						return false;
+				}
+		}(),
+		workers: !!window.Worker,
+		fileapi: window.File && window.FileReader && window.FileList && window.Blob,
+
+		getWebGLErrorMessage: function getWebGLErrorMessage() {
+
+				var element = document.createElement('div');
+				element.id = 'webgl-error-message';
+				element.style.fontFamily = 'monospace';
+				element.style.fontSize = '13px';
+				element.style.fontWeight = 'normal';
+				element.style.textAlign = 'center';
+				element.style.background = '#fff';
+				element.style.color = '#000';
+				element.style.padding = '1.5em';
+				element.style.width = '400px';
+				element.style.margin = '5em auto 0';
+
+				if (!this.webgl) {
+
+						element.innerHTML = window.WebGLRenderingContext ? ['Your graphics card does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br />', 'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'].join('\n') : ['Your browser does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br/>', 'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'].join('\n');
+				}
+
+				return element;
+		},
+
+		addGetWebGLMessage: function addGetWebGLMessage(parameters) {
+
+				var parent, id, element;
+
+				parameters = parameters || {};
+
+				parent = parameters.parent !== undefined ? parameters.parent : document.body;
+				id = parameters.id !== undefined ? parameters.id : 'oldie';
+
+				element = Detector.getWebGLErrorMessage();
+				element.id = id;
+
+				parent.appendChild(element);
+		}
+
+};
+
+// browserify support
+if ((typeof module === 'undefined' ? 'undefined' : _typeof(module)) === 'object') {
+
+		module.exports = Detector;
+}
+
+},{}],3:[function(require,module,exports){
+'use strict';
+
 var _three = require('three');
 
 var THREE = _interopRequireWildcard(_three);
 
+var _detector = require('./commons/detector');
+
+var Detector = _interopRequireWildcard(_detector);
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
+camera.position.set(0, 0, 100);
+camera.lookAt(0, 0, 0);
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+/*
+To add a cube
 var geometry = new THREE.BoxGeometry(1, 1, 1);
 var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 var cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+scene.add(cube);*/
+//Now we are going to make a line:
+var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+var geometry = new THREE.Geometry();
+geometry.vertices.push(new THREE.Vector3(-10, 0, 0));
+geometry.vertices.push(new THREE.Vector3(0, 10, 0));
+geometry.vertices.push(new THREE.Vector3(10, 0, 0));
 
-camera.position.z = 5;
+var line = new THREE.Line(geometry, material);
+scene.add(line);
 
 function init() {
     requestAnimationFrame(init);
 
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+    //Cube rotation
+    //cube.rotation.x += 0.01;
+    //cube.rotation.y += 0.01;
 
     renderer.render(scene, camera);
 }
 
-init();
+if (Detector.webgl) {
+    // Initiate function or other initializations here
+    init();
+} else {
+    var warning = Detector.getWebGLErrorMessage();
+    document.getElementById('container').appendChild(warning);
+}
 
-},{"three":1}]},{},[2])
+},{"./commons/detector":2,"three":1}]},{},[3])
 //# sourceMappingURL=bundle.js.map
