@@ -47664,6 +47664,31 @@
 },{}],2:[function(require,module,exports){
 'use strict';
 
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.Player = undefined;
+
+var _three = require('three');
+
+var THREE = _interopRequireWildcard(_three);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+var geometry = new THREE.CircleGeometry(5, 32);
+var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+var Player = {
+    Body: function () {
+        return new THREE.Mesh(geometry, material);
+    }()
+};
+
+exports.Player = Player;
+
+},{"three":1}],3:[function(require,module,exports){
+'use strict';
+
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 /**
@@ -47742,7 +47767,7 @@ if ((typeof module === 'undefined' ? 'undefined' : _typeof(module)) === 'object'
 		module.exports = Detector;
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict';
 
 var _three = require('three');
@@ -47753,11 +47778,13 @@ var _detector = require('./commons/detector');
 
 var Detector = _interopRequireWildcard(_detector);
 
+var _player = require('./assets/player');
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
-camera.position.set(0, 0, 100);
+camera.position.set(0, 0, 200);
 camera.lookAt(0, 0, 0);
 
 var renderer = new THREE.WebGLRenderer();
@@ -47771,17 +47798,19 @@ var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 var cube = new THREE.Mesh(geometry, material);
 scene.add(cube);*/
 //Now we are going to make a line:
-var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+/*var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
 var geometry = new THREE.Geometry();
-geometry.vertices.push(new THREE.Vector3(-10, 0, 0));
-geometry.vertices.push(new THREE.Vector3(0, 10, 0));
-geometry.vertices.push(new THREE.Vector3(10, 0, 0));
+geometry.vertices.push(new THREE.Vector3( -10, 0, 0) );
+geometry.vertices.push(new THREE.Vector3( 0, 10, 0) );
+geometry.vertices.push(new THREE.Vector3( 10, 0, 0) );
 
-var line = new THREE.Line(geometry, material);
-scene.add(line);
+var line = new THREE.Line( geometry, material );*/
 
-function init() {
-    requestAnimationFrame(init);
+_player.Player.Body.position.set(-50, -50, 0);
+scene.add(_player.Player.Body);
+
+function GameLoop() {
+    requestAnimationFrame(GameLoop);
 
     //Cube rotation
     //cube.rotation.x += 0.01;
@@ -47792,11 +47821,11 @@ function init() {
 
 if (Detector.webgl) {
     // Initiate function or other initializations here
-    init();
+    GameLoop();
 } else {
     var warning = Detector.getWebGLErrorMessage();
     document.getElementById('container').appendChild(warning);
 }
 
-},{"./commons/detector":2,"three":1}]},{},[3])
+},{"./assets/player":2,"./commons/detector":3,"three":1}]},{},[4])
 //# sourceMappingURL=bundle.js.map
