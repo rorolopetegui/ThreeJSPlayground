@@ -47667,7 +47667,7 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Player = undefined;
+exports.Camera = exports.Player = undefined;
 
 var _three = require('three');
 
@@ -47677,6 +47677,9 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 var geometry = new THREE.CircleGeometry(5, 32);
 var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+var Camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
+Camera.position.set(0, 0, 200);
+Camera.lookAt(0, 0, 0);
 
 var Player = {
     Body: function () {
@@ -47685,8 +47688,57 @@ var Player = {
 };
 
 exports.Player = Player;
+exports.Camera = Camera;
 
 },{"three":1}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.ObjectToShow = undefined;
+
+var _three = require("three");
+
+var THREE = _interopRequireWildcard(_three);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+var testEnabled = true;
+
+/*
+    *TEST CLASS*
+*/
+
+var ObjectToShow = {
+    Test: function () {
+        console.log("Testing Mode: " + testEnabled);
+        if (testEnabled) {
+
+            var geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+            var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+            var cubeA = new THREE.Mesh(geometry, material);
+            cubeA.position.set(100, 100, 0);
+
+            var cubeB = new THREE.Mesh(geometry, material);
+            cubeB.position.set(-100, -100, 0);
+
+            //create a group and add the two cubes
+            //These cubes can now be rotated / scaled etc as a group
+            var group = new THREE.Group();
+            group.add(cubeA);
+            group.add(cubeB);
+            return group;
+        } else {
+            return false;
+        }
+    }()
+};
+
+exports.ObjectToShow = ObjectToShow;
+
+},{"three":1}],4:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -47767,7 +47819,7 @@ if ((typeof module === 'undefined' ? 'undefined' : _typeof(module)) === 'object'
 		module.exports = Detector;
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 var _three = require('three');
@@ -47780,12 +47832,11 @@ var Detector = _interopRequireWildcard(_detector);
 
 var _player = require('./assets/player');
 
+var _test = require('./assets/test');
+
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
-camera.position.set(0, 0, 200);
-camera.lookAt(0, 0, 0);
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -47806,17 +47857,19 @@ geometry.vertices.push(new THREE.Vector3( 10, 0, 0) );
 
 var line = new THREE.Line( geometry, material );*/
 
-_player.Player.Body.position.set(-50, -50, 0);
+//Player.Body.position.set(-50,-50,0);
 scene.add(_player.Player.Body);
+scene.add(_test.ObjectToShow.Test);
 
 function GameLoop() {
     requestAnimationFrame(GameLoop);
+    setInterval(Update, 16);
 
     //Cube rotation
     //cube.rotation.x += 0.01;
     //cube.rotation.y += 0.01;
 
-    renderer.render(scene, camera);
+    renderer.render(scene, _player.Camera);
 }
 
 if (Detector.webgl) {
@@ -47827,5 +47880,7 @@ if (Detector.webgl) {
     document.getElementById('container').appendChild(warning);
 }
 
-},{"./assets/player":2,"./commons/detector":3,"three":1}]},{},[4])
+function Update() {}
+
+},{"./assets/player":2,"./assets/test":3,"./commons/detector":4,"three":1}]},{},[5])
 //# sourceMappingURL=bundle.js.map

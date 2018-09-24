@@ -1,12 +1,10 @@
 import * as THREE from 'three';
 import * as Detector from './commons/detector';
-import { Player } from './assets/player';
+import { Player, Camera } from './assets/player';
+import { ObjectToShow } from './assets/test';
 
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 500);
-camera.position.set( 0, 0, 200 );
-camera.lookAt( 0, 0, 0 );
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -27,17 +25,19 @@ geometry.vertices.push(new THREE.Vector3( 10, 0, 0) );
 
 var line = new THREE.Line( geometry, material );*/
 
-Player.Body.position.set(-50,-50,0);
+//Player.Body.position.set(-50,-50,0);
 scene.add( Player.Body );
+scene.add( ObjectToShow.Test);
 
 function GameLoop() {
     requestAnimationFrame(GameLoop);
+    setInterval(Update, 16);
     
     //Cube rotation
     //cube.rotation.x += 0.01;
     //cube.rotation.y += 0.01;
 
-    renderer.render(scene, camera);
+    renderer.render(scene, Camera);
 }
 
 if (Detector.webgl) {
@@ -46,4 +46,8 @@ if (Detector.webgl) {
 } else {
     var warning = Detector.getWebGLErrorMessage();
     document.getElementById('container').appendChild(warning);
+}
+
+function Update(){
+    
 }
