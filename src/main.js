@@ -1,7 +1,49 @@
-import * as THREE from 'three';
-import * as Detector from './commons/detector';
-import { Player, Camera } from './assets/player';
-import { ObjectToShow } from './assets/test';
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
+import { WebGLRenderer } from 'three';
+import * as Detector from './commons/Detector';
+import { SceneManager } from './SceneManager';
+
+var renderer = new WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+const canvas = document.body.appendChild(renderer.domElement);
+const sceneManager = new SceneManager(renderer);
+
+if (Detector.webgl) {
+    // Initiate function or other initializations here
+    bindEventListeners();
+    render();
+} else {
+    var warning = Detector.getWebGLErrorMessage();
+    document.getElementById('container').appendChild(warning);
+}
+
+function bindEventListeners() {
+    window.onresize = resizeCanvas;
+    resizeCanvas();
+}
+
+function resizeCanvas() {    
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    sceneManager.onWindowResize();
+    
+}
+
+function render() {
+    requestAnimationFrame(render);
+    sceneManager.update();
+}
+
+
+
+/*
+
+import { Player, Camera } from './assets/Player';
+import { ObjectToShow } from './assets/Test';
+import { Floor } from './assets/environment/Floor';
 
 
 var scene = new THREE.Scene();
@@ -26,6 +68,10 @@ geometry.vertices.push(new THREE.Vector3( 10, 0, 0) );
 var line = new THREE.Line( geometry, material );*/
 
 //Player.Body.position.set(-50,-50,0);
+/*
+
+//Enter in the scene
+scene.add(Floor);
 scene.add( Player.Body );
 scene.add( ObjectToShow.Test);
 
@@ -50,4 +96,4 @@ if (Detector.webgl) {
 
 function Update(){
     
-}
+}*/

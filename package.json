@@ -46,6 +46,6 @@
   "dependencies": {
     "es6-promise": "^4.2.5",
     "three": "^0.96.0",
-    "three-full": "^11.3.0"
+    "three-full": "^11.3.1"
   }
 }
