@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 // floor
-var floorGeometry = new THREE.PlaneBufferGeometry( 500, 500 );
+var floorGeometry = new THREE.PlaneBufferGeometry( 100, 100 );
 //floorGeometry.rotateX( - Math.PI / 2 );
 // vertex displacement
 /*var position = floorGeometry.attributes.position;

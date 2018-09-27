@@ -1,7 +1,7 @@
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 import { Scene, Color } from 'three';
-import { GeneralLights } from './../assets/GeneralLights';
 import { Player } from './../assets/Player';
+import { MainMap } from './../assets/environment/MainMap';
 
 function PrincipalScene() {
     const scene = new Scene();
@@ -14,8 +14,8 @@ function PrincipalScene() {
         return player.getCamera();
     };
     const SceneSubjects = [
-        new GeneralLights(scene),
         player,
+        new MainMap(scene),
     ];
     
     this.update = function (dt) {

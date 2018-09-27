@@ -15,7 +15,8 @@ function SceneManager(canvas) {
     var activeScene = new PrincipalScene();
     const camera = activeScene.getCamera();
     const renderer = canvas;
-    activeScene.getScene().add( ObjectToShow.Test);
+    if(ObjectToShow.Test)
+        activeScene.getScene().add( ObjectToShow.Test);
     this.update = function () {
         const elapsedTime = clock.getDelta();
         activeScene.update(elapsedTime);
@@ -24,7 +25,10 @@ function SceneManager(canvas) {
 
     this.onWindowResize = function () {
         const width  = window.innerWidth;
-        const height = window.innerHeight;
+        const height = window.innerHeight*0.993;
+        //const width  = window.innerWidth;
+        //const height = window.innerHeight;
+        
         
         screenDimensions.width = width;
         screenDimensions.height = height;

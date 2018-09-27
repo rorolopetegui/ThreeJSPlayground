@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-var testEnabled = true;
+var testEnabled = false;
 
 /*
     *TEST CLASS*
@@ -7,9 +7,8 @@ var testEnabled = true;
 
 var ObjectToShow = {
     Test: (function () {
-        console.log("Testing Mode: " + testEnabled);
         if (testEnabled) {
-
+            console.log("Testing Mode Enabled");
             var geometry = new THREE.BoxBufferGeometry(1, 1, 1);
             var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
