@@ -47711,7 +47711,7 @@ function SceneManager(canvas) {
 //import * as THREE from 'three';
 exports.SceneManager = SceneManager;
 
-},{"./assets/Test":4,"./scenes/PrincipalScene":9,"three":1}],3:[function(require,module,exports){
+},{"./assets/Test":5,"./scenes/PrincipalScene":10,"three":1}],3:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47721,26 +47721,22 @@ exports.Player = undefined;
 
 var _three = require('three');
 
-var _PlayerController = require('../scripts/PlayerController');
+var _PlayerController = require('../../scripts/PlayerController');
 
-/*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var _PlayerMesh = require('./PlayerMesh');
+
 function Player(scene) {
     //Player Attributes 
-    var acceleration = 1000;
-    var maxVelocity = 50;
+    var acceleration = 800;
     var friction = 10;
     var aspectRatio = window.innerWidth / window.innerHeight;
     var fieldOfView = 45;
     var nearPlane = 1;
     var farPlane = 500;
     var cameraDistanceToPlayer = 200;
-    var playerSize = 5;
-    var geometryTriangles = 32;
     //Player Attributes 
     //Player Components
-    var geometry = new _three.CircleGeometry(playerSize, geometryTriangles);
-    var material = new _three.MeshBasicMaterial({ color: 0xffff00 });
-    var mesh = new _three.Mesh(geometry, material);
+    var mesh = (0, _PlayerMesh.PlayerMesh)();
     var Camera = new _three.PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
     Camera.position.set(0, 0, cameraDistanceToPlayer);
     Camera.lookAt(0, 0, 0);
@@ -47764,6 +47760,9 @@ function Player(scene) {
     this.getMesh = function () {
         return mesh;
     };
+    this.getMaterials = function () {
+        return mesh.children[0];
+    };
     this.moveUp = function (move) {
         moveUp = move;
     };
@@ -47778,14 +47777,17 @@ function Player(scene) {
     };
     this.translateX = function (x) {
         mesh.translateX(x);
+        //mesh.position.set(mesh.position.x + x, mesh.poisition.y, mesh.position.z);
         Camera.translateX(x);
     };
     this.translateY = function (y) {
         mesh.translateY(y);
+        //mesh.position.set(mesh.position.x, mesh.poisition.y + y, mesh.position.z);
         Camera.translateY(y);
     };
 
     this.update = function (dt) {
+        //Player movement
         if (velocity.x != 0) {
             if (velocity.x > 0 && velocity.x <= 0.1 || velocity.x < 0 && velocity.x >= -0.1) velocity.x = 0;else velocity.x -= velocity.x * friction * dt;
         }
@@ -47797,25 +47799,83 @@ function Player(scene) {
         direction.x = Number(moveLeft) - Number(moveRight);
         direction.normalize(); // this ensures consistent movements in all directions
         if (moveUp || moveDown) {
-            velocity.y -= direction.y * acceleration * dt;
-            if (velocity.y > maxVelocity && velocity.y > 0) velocity.y = maxVelocity;
-            if (velocity.y < -maxVelocity && velocity.y < 0) velocity.y = -maxVelocity;
+            velocity.y -= direction.y * acceleration * dt; /*
+                                                           if (velocity.y > maxVelocity && velocity.y > 0)
+                                                           velocity.y = maxVelocity;
+                                                           if (velocity.y < -maxVelocity && velocity.y < 0)
+                                                           velocity.y = -maxVelocity;
+                                                           */
         }
         if (moveLeft || moveRight) {
             velocity.x -= direction.x * acceleration * dt;
-            if (velocity.x > maxVelocity) velocity.x = maxVelocity;
-            if (velocity.x < -maxVelocity && velocity.x < 0) velocity.x = -maxVelocity;
+            /*
+            if (velocity.x > maxVelocity)
+                velocity.x = maxVelocity;
+            if (velocity.x < -maxVelocity && velocity.x < 0)
+                velocity.x = -maxVelocity;
+                */
         }
         if (velocity.x != 0) this.translateX(velocity.x * dt);
         if (velocity.y != 0) this.translateY(velocity.y * dt);
 
         //console.log("Dt Player: " + dt);
     };
-};
+} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+;
 
 exports.Player = Player;
 
-},{"../scripts/PlayerController":10,"three":1}],4:[function(require,module,exports){
+},{"../../scripts/PlayerController":11,"./PlayerMesh":4,"three":1}],4:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.PlayerMesh = undefined;
+
+var _three = require('three');
+
+function PlayerMesh() {
+    //Atts
+    var playerSize = 5;
+    var geometryTriangles = 32;
+    var indicatorSize = 1;
+    var indicatorTriangles = 8;
+    var playerBodyColor = 0xffff00;
+    var indicatorColor = 0x00ff00;
+    //Atts
+    var player = new _three.Object3D();
+    var playerMaterials = new _three.Object3D();
+    //var player_geometry = new Geometry();
+
+    var player_body_geometry = new _three.CircleGeometry(playerSize, geometryTriangles);
+    var player_body_material = new _three.MeshBasicMaterial({ color: playerBodyColor });
+    var player_body_mesh = new _three.Mesh(player_body_geometry, player_body_material);
+    playerMaterials.add(player_body_mesh);
+    /*player_body_mesh.updateMatrix();
+    player_geometry.merge(player_body_mesh.geometry, player_body_mesh.matrix, 0);*/
+
+    var player_indicator_geometry = new _three.CircleGeometry(indicatorSize, indicatorTriangles);
+    var player_indicator_material = new _three.MeshBasicMaterial({ color: indicatorColor });
+    var player_indicator_mesh = new _three.Mesh(player_indicator_geometry, player_indicator_material);
+    //player_indicator_mesh.z = 2;
+    player_indicator_mesh.position.set(0, 3, 0);
+    playerMaterials.add(player_indicator_mesh);
+    player.add(playerMaterials);
+    //player_indicator_mesh.updateMatrix();
+    //player_geometry.merge(player_indicator_mesh.geometry, player_indicator_mesh.matrix, 1);
+
+    //var player = new Mesh(player_geometry, new MeshFaceMaterial([player_body_material, player_indicator_material]));
+
+    //player.geometry.computeFaceNormals();
+    //player.geometry.computeVertexNormals();
+
+    return player;
+};
+
+exports.PlayerMesh = PlayerMesh;
+
+},{"three":1}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47839,25 +47899,32 @@ var ObjectToShow = {
     Test: function () {
         if (testEnabled) {
             console.log("Testing Mode Enabled");
-            var geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-            var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-
-            var cubeA = new THREE.Mesh(geometry, material);
-            cubeA.position.set(100, 100, 0);
-
-            var cubeB = new THREE.Mesh(geometry, material);
-            cubeB.position.set(-100, -100, 0);
-
-            var floorGeometry = new THREE.PlaneBufferGeometry(2000, 2000, 100, 100);
-            var floorMaterial = new THREE.MeshBasicMaterial({ color: 0x1F3E0F });
-            var Floor = new THREE.Mesh(floorGeometry, floorMaterial);
-
-            //create a group and add the two cubes
-            //These cubes can now be rotated / scaled etc as a group
+            //Atts
+            var playerSize = 5;
+            var geometryTriangles = 32;
+            var indicatorSize = 1;
+            var indicatorTriangles = 8;
+            var playerBodyColor = 0xffff00;
+            var indicatorColor = 0x00ff00;
+            var player = new THREE.Object3D();
+            //Atts
+            var player_body_geometry = new THREE.CircleGeometry(playerSize, geometryTriangles);
+            var player_body_material = new THREE.MeshBasicMaterial({ color: playerBodyColor });
+            var player_body_mesh = new THREE.Mesh(player_body_geometry, player_body_material);
+            player.add(player_body_mesh);
+            var player_indicator_geometry = new THREE.CircleGeometry(indicatorSize, indicatorTriangles);
+            var player_indicator_material = new THREE.MeshBasicMaterial({ color: indicatorColor });
+            var player_indicator_mesh = new THREE.Mesh(player_indicator_geometry, player_indicator_material);
+            player_indicator_mesh.position.set(0, 3, 0);
+            player.add(player_indicator_mesh);
+            player.position.set(10, 10, 0);
+            //player.
             var group = new THREE.Group();
-            group.add(cubeA);
-            group.add(cubeB);
-            group.add(Floor);
+
+            group.add(player);
+            //group.add(arrowHelper);
+            //group.add(pendulum);
+
             return group;
         } else {
             return false;
@@ -47867,7 +47934,7 @@ var ObjectToShow = {
 
 exports.ObjectToShow = ObjectToShow;
 
-},{"three":1}],5:[function(require,module,exports){
+},{"three":1}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47882,7 +47949,7 @@ var THREE = _interopRequireWildcard(_three);
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 // floor
-var floorGeometry = new THREE.PlaneBufferGeometry(100, 100);
+var floorGeometry = new THREE.PlaneBufferGeometry(200, 200);
 //floorGeometry.rotateX( - Math.PI / 2 );
 // vertex displacement
 /*var position = floorGeometry.attributes.position;
@@ -47908,7 +47975,7 @@ Floor.position.set(0, 0, -1);
 
 exports.Floor = Floor;
 
-},{"three":1}],6:[function(require,module,exports){
+},{"three":1}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47931,7 +47998,7 @@ function MainMap(scene) {
 
 exports.MainMap = MainMap;
 
-},{"./Floor":5}],7:[function(require,module,exports){
+},{"./Floor":6}],8:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -48012,7 +48079,7 @@ if ((typeof module === 'undefined' ? 'undefined' : _typeof(module)) === 'object'
 		module.exports = Detector;
 }
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 var _three = require('three');
@@ -48117,7 +48184,7 @@ function Update(){
     
 }*/
 
-},{"./SceneManager":2,"./commons/Detector":7,"three":1}],9:[function(require,module,exports){
+},{"./SceneManager":2,"./commons/Detector":8,"three":1}],10:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -48127,7 +48194,7 @@ exports.PrincipalScene = undefined;
 
 var _three = require('three');
 
-var _Player = require('./../assets/Player');
+var _Player = require('./../assets/Player/Player');
 
 var _MainMap = require('./../assets/environment/MainMap');
 
@@ -48153,7 +48220,7 @@ function PrincipalScene() {
 ;
 exports.PrincipalScene = PrincipalScene;
 
-},{"./../assets/Player":3,"./../assets/environment/MainMap":6,"three":1}],10:[function(require,module,exports){
+},{"./../assets/Player/Player":3,"./../assets/environment/MainMap":7,"three":1}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -48209,45 +48276,31 @@ function PlayerController(player) {
                 break;
         }
     };
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+    var mouseX = 0;
+    var mouseY = 0;
+    var onMouseMove = function onMouseMove(event) {
+        mouseX = event.clientX + 0.5 - windowHalfX;
+        mouseY = event.clientY + 0.5 - windowHalfY;
+        var x = mouseX;
+        var y = -mouseY;
+        var alfa;
+        alfa = Math.atan(y / x);
+        alfa = alfa * 180 / Math.PI;
+
+        if (Math.sign(x) === -1) alfa += 180;
+
+        var rotation = (alfa - 90) * Math.PI / 180;
+
+        Player.getMaterials().rotation.set(0, 0, rotation);
+    };
+
     document.addEventListener('keydown', onKeyDown, false);
     document.addEventListener('keyup', onKeyUp, false);
+    document.addEventListener('mousemove', onMouseMove, false);
 }
 exports.PlayerController = PlayerController;
-/*
-function animate() {
-    requestAnimationFrame(animate);
-    if (controls.isLocked === true) {
-        raycaster.ray.origin.copy(controls.getObject().position);
-        raycaster.ray.origin.y -= 10;
-        var intersections = raycaster.intersectObjects(objects);
-        var onObject = intersections.length > 0;
-        var time = performance.now();
-        var delta = (time - prevTime) / 1000;
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveLeft) - Number(moveRight);
-        direction.normalize(); // this ensures consistent movements in all directions
-        if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
-        if (onObject === true) {
-            velocity.y = Math.max(0, velocity.y);
-            canJump = true;
-        }
-        controls.getObject().translateX(velocity.x * delta);
-        controls.getObject().translateY(velocity.y * delta);
-        controls.getObject().translateZ(velocity.z * delta);
-        if (controls.getObject().position.y < 10) {
-            velocity.y = 0;
-            controls.getObject().position.y = 10;
-            canJump = true;
-        }
-        prevTime = time;
-    }
-    renderer.render(scene, camera);
-}
-*/
 
-},{}]},{},[8])
+},{}]},{},[9])
 //# sourceMappingURL=bundle.js.map

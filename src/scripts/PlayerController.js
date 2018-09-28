@@ -16,7 +16,7 @@ function PlayerController(player) {
                 break;
             case 39: // right
             case 68: // d
-                Player.moveRight(true);                
+                Player.moveRight(true);
                 break;
         }
     };
@@ -36,46 +36,34 @@ function PlayerController(player) {
                 break;
             case 39: // right
             case 68: // d
-                Player.moveRight(false);                
+                Player.moveRight(false);
                 break;
         }
     };
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+    var mouseX = 0;
+    var mouseY = 0;
+    var onMouseMove = function (event) {
+        mouseX = ((event.clientX + 0.5) - windowHalfX);
+        mouseY = ((event.clientY + 0.5) - windowHalfY);
+        var x = mouseX;
+        var y = -mouseY;
+        var alfa;
+        alfa = Math.atan(y / x);
+        alfa = (alfa * 180) / Math.PI;
+
+        if (Math.sign(x) === -1)
+            alfa += 180;
+        
+        var rotation = ((alfa - 90) * Math.PI) / 180;
+
+
+        Player.getMaterials().rotation.set(0, 0, rotation);
+    }
+
     document.addEventListener('keydown', onKeyDown, false);
     document.addEventListener('keyup', onKeyUp, false);
+    document.addEventListener('mousemove', onMouseMove, false);
 }
 export { PlayerController };
-/*
-function animate() {
-    requestAnimationFrame(animate);
-    if (controls.isLocked === true) {
-        raycaster.ray.origin.copy(controls.getObject().position);
-        raycaster.ray.origin.y -= 10;
-        var intersections = raycaster.intersectObjects(objects);
-        var onObject = intersections.length > 0;
-        var time = performance.now();
-        var delta = (time - prevTime) / 1000;
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveLeft) - Number(moveRight);
-        direction.normalize(); // this ensures consistent movements in all directions
-        if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
-        if (onObject === true) {
-            velocity.y = Math.max(0, velocity.y);
-            canJump = true;
-        }
-        controls.getObject().translateX(velocity.x * delta);
-        controls.getObject().translateY(velocity.y * delta);
-        controls.getObject().translateZ(velocity.z * delta);
-        if (controls.getObject().position.y < 10) {
-            velocity.y = 0;
-            controls.getObject().position.y = 10;
-            canJump = true;
-        }
-        prevTime = time;
-    }
-    renderer.render(scene, camera);
-}
-*/

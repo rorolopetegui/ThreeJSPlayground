@@ -1,6 +1,6 @@
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 import { Scene, Color } from 'three';
-import { Player } from './../assets/Player';
+import { Player } from './../assets/Player/Player';
 import { MainMap } from './../assets/environment/MainMap';
 
 function PrincipalScene() {

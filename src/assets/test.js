@@ -9,29 +9,32 @@ var ObjectToShow = {
     Test: (function () {
         if (testEnabled) {
             console.log("Testing Mode Enabled");
-            var geometry = new THREE.BoxBufferGeometry(1, 1, 1);
-            var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-
-            var cubeA = new THREE.Mesh(geometry, material);
-            cubeA.position.set(100, 100, 0);
-
-            var cubeB = new THREE.Mesh(geometry, material);
-            cubeB.position.set(-100, -100, 0);
-
-            var floorGeometry = new THREE.PlaneBufferGeometry(2000, 2000, 100, 100);
-            var floorMaterial = new THREE.MeshBasicMaterial({ color: 0x1F3E0F });
-            var Floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            
-
-
-
-
-            //create a group and add the two cubes
-            //These cubes can now be rotated / scaled etc as a group
+            //Atts
+            const playerSize = 5;
+            const geometryTriangles = 32;
+            const indicatorSize = 1;
+            const indicatorTriangles = 8;
+            const playerBodyColor = 0xffff00;
+            const indicatorColor = 0x00ff00;
+            var player = new THREE.Object3D();
+            //Atts
+            const player_body_geometry = new THREE.CircleGeometry(playerSize, geometryTriangles);
+            const player_body_material = new THREE.MeshBasicMaterial({ color: playerBodyColor });
+            const player_body_mesh = new THREE.Mesh(player_body_geometry, player_body_material);
+            player.add(player_body_mesh);
+            const player_indicator_geometry = new THREE.CircleGeometry(indicatorSize, indicatorTriangles);
+            const player_indicator_material = new THREE.MeshBasicMaterial({ color: indicatorColor });
+            const player_indicator_mesh = new THREE.Mesh(player_indicator_geometry, player_indicator_material);
+            player_indicator_mesh.position.set(0,3,0);
+            player.add(player_indicator_mesh);
+            player.position.set(10,10,0);
+            //player.
             var group = new THREE.Group();
-            group.add(cubeA);
-            group.add(cubeB);
-            group.add(Floor);
+
+            group.add(player);
+            //group.add(arrowHelper);
+            //group.add(pendulum);
+
             return group;
         } else {
             return false;
