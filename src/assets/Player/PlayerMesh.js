@@ -1,7 +1,7 @@
 import { Mesh, CircleGeometry, MeshBasicMaterial, Object3D } from 'three';
 function PlayerMesh(){
     //Atts
-    const playerSize = 5;
+    const playerSize = 6.5;
     const geometryTriangles = 32;
     const indicatorSize = 1;
     const indicatorTriangles = 8;
@@ -26,6 +26,7 @@ function PlayerMesh(){
     player_indicator_mesh.position.set(0, 3, 0);
     playerMaterials.add(player_indicator_mesh);
     player.add(playerMaterials);
+    player.position.set(0,0,0.1);
     //player_indicator_mesh.updateMatrix();
     //player_geometry.merge(player_indicator_mesh.geometry, player_indicator_mesh.matrix, 1);
 

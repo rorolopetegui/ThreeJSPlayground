@@ -1,23 +1,37 @@
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-import { Scene, Color } from 'three';
+import { Scene, Color, PerspectiveCamera } from 'three';
 import { Player } from './../assets/Player/Player';
+import { Ball } from './../assets/Ball/Ball';
 import { MainMap } from './../assets/environment/MainMap';
 
 function PrincipalScene() {
     const scene = new Scene();
     scene.background = new Color("#000");
-    const player = new Player(scene);
-    this.getScene = function(){
+    var aspectRatio = window.innerWidth / window.innerHeight;
+    const fieldOfView = 45;
+    const nearPlane = 1;
+    const farPlane = 500;
+    const cameraDistanceToPlayer = 250;
+    const Camera = new PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
+    Camera.position.set(0, 0, cameraDistanceToPlayer);
+    Camera.lookAt(0, 0, 0);
+    scene.add(Camera);
+    const ball = new Ball(scene);
+    const player = new Player(scene, Camera, ball);
+    //player.getMesh().position.set(-50,0,0);
+
+    this.getScene = function () {
         return scene;
     };
-    this.getCamera = function(){
-        return player.getCamera();
+    this.getCamera = function () {
+        return Camera;
     };
     const SceneSubjects = [
         player,
+        ball,
         new MainMap(scene),
     ];
-    
+
     this.update = function (dt) {
         //console.log("DT PrincipalScene" + dt);
         for (let i = 0; i < SceneSubjects.length; i++)

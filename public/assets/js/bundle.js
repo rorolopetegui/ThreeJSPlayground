@@ -47711,7 +47711,114 @@ function SceneManager(canvas) {
 //import * as THREE from 'three';
 exports.SceneManager = SceneManager;
 
-},{"./assets/Test":5,"./scenes/PrincipalScene":10,"three":1}],3:[function(require,module,exports){
+},{"./assets/Test":7,"./scenes/PrincipalScene":12,"three":1}],3:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.Ball = undefined;
+
+var _three = require('three');
+
+var _BallMesh = require('./BallMesh');
+
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var FRICTION = 2;
+var STOP_FRICTION_VEL = 10;
+
+function Ball(scene) {
+    //Ball atts
+    var velocity = new _three.Vector3();
+    var direction = new _three.Vector3();
+    var forceImpulse = 0;
+    //Ball Components
+    var mesh = (0, _BallMesh.BallMesh)();
+    //Components to the scene
+    scene.add(mesh);
+    //setters
+    this.shootBall = function (x, y, force) {
+        direction.x = x;
+        direction.y = y;
+        direction.normalize();
+        forceImpulse = force;
+        velocity.y += direction.y * forceImpulse;
+        velocity.x += direction.x * forceImpulse;
+    };
+    //Getters
+    this.getMesh = function () {
+        return mesh;
+    };
+    this.getMaterials = function () {
+        return mesh.children[0];
+    };
+    //Controls
+    this.translateX = function (x) {
+        mesh.translateX(x);
+    };
+    this.translateY = function (y) {
+        mesh.translateY(y);
+    };
+    var stopMovement = false;
+    this.update = function (dt) {
+        //Ball movement
+
+        if (velocity.x != 0) {
+            if (velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL || velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL) stopMovement = true;else velocity.x -= velocity.x * FRICTION * dt;
+        }
+        if (velocity.y != 0) {
+            if (velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL || velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL) stopMovement = true;else velocity.y -= velocity.y * FRICTION * dt;
+        }
+
+        if (stopMovement) {
+            velocity.x = 0;
+            velocity.y = 0;
+            stopMovement = false;
+        }
+        if (velocity.x != 0) {
+            this.translateX(velocity.x * dt);
+        }
+        if (velocity.y != 0) {
+            this.translateY(velocity.y * dt);
+        }
+    };
+};
+
+exports.Ball = Ball;
+
+},{"./BallMesh":4,"three":1}],4:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.BallMesh = undefined;
+
+var _three = require('three');
+
+function BallMesh() {
+    //Atts
+    var ballSize = 4;
+    var geometryTriangles = 32;
+    var ballBodyColor = 0xCCCCCC;
+
+    //Atts
+    var ball = new _three.Object3D();
+    var ballMaterials = new _three.Object3D();
+
+    var ball_body_geometry = new _three.CircleGeometry(ballSize, geometryTriangles);
+    var ball_body_material = new _three.MeshBasicMaterial({ color: ballBodyColor });
+    var ball_body_mesh = new _three.Mesh(ball_body_geometry, ball_body_material);
+    ballMaterials.add(ball_body_mesh);
+
+    ball.add(ballMaterials);
+
+    return ball;
+};
+
+exports.BallMesh = BallMesh;
+
+},{"three":1}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47725,43 +47832,64 @@ var _PlayerController = require('../../scripts/PlayerController');
 
 var _PlayerMesh = require('./PlayerMesh');
 
-function Player(scene) {
+//Game Constants
+var SHOOT_MAX_TIME = 0.86; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+
+var SHOOT_MAX_FORCE = 600;
+var SHOOT_MIN_FORCE = 5;
+var ACCELERATION = 800;
+var FRICTION = 10;
+
+function Player(scene, Camera, ball) {
+    //Saves the ball so we can call static methods in it
+    var gameBall = ball;
+    //Controls that needs to be constantly checked
+    var distanceToBall;
+    var gotBall = false;
     //Player Attributes 
-    var acceleration = 800;
-    var friction = 10;
-    var aspectRatio = window.innerWidth / window.innerHeight;
-    var fieldOfView = 45;
-    var nearPlane = 1;
-    var farPlane = 500;
-    var cameraDistanceToPlayer = 200;
-    //Player Attributes 
-    //Player Components
-    var mesh = (0, _PlayerMesh.PlayerMesh)();
-    var Camera = new _three.PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
-    Camera.position.set(0, 0, cameraDistanceToPlayer);
-    Camera.lookAt(0, 0, 0);
-    //Player Components
-    //Components to the scene
-    scene.add(mesh);
-    scene.add(Camera);
-    //Components to the scene
-    //Controls
-    (0, _PlayerController.PlayerController)(this);
     var moveUp = false;
     var moveDown = false;
     var moveRight = false;
     var moveLeft = false;
     var velocity = new _three.Vector3();
     var direction = new _three.Vector3();
+    var isShooting = false;
+    var shootingCounter = 0;
+    var shootForce = 0;
+
+    //Player Attributes 
+    //Player Components
+    var mesh = (0, _PlayerMesh.PlayerMesh)();
+
+    //Components to the scene
+    scene.add(mesh);
+    //Components to the scene
+
+    (0, _PlayerController.PlayerController)(this, Camera);
+
     //Controls
-    this.getCamera = function () {
-        return Camera;
+    this.onMouseDown = function () {
+        if (gotBall) {
+
+            isShooting = true;
+        }
     };
-    this.getMesh = function () {
-        return mesh;
-    };
-    this.getMaterials = function () {
-        return mesh.children[0];
+    this.onMouseUp = function (mouseX, mouseY) {
+        if (gotBall) {
+            //Performs shoot
+            shootForce = shootingCounter * SHOOT_MAX_FORCE / SHOOT_MAX_TIME;
+            shootForce = shootForce >= SHOOT_MIN_FORCE ? shootForce : SHOOT_MIN_FORCE;
+            //console.log("SHOOTING FORCE: " + shootForce);
+            gameBall.shootBall(mouseX, mouseY, shootForce);
+            //Reset control vars
+            isShooting = false;
+            gotBall = false;
+            shootingCounter = 0;
+        } else {
+            if (distanceToBall < 100) {
+                gotBall = true;
+            }
+        }
     };
     this.moveUp = function (move) {
         moveUp = move;
@@ -47777,55 +47905,65 @@ function Player(scene) {
     };
     this.translateX = function (x) {
         mesh.translateX(x);
+        if (gotBall) {
+            gameBall.getMesh().translateX(x);
+        }
         //mesh.position.set(mesh.position.x + x, mesh.poisition.y, mesh.position.z);
-        Camera.translateX(x);
     };
     this.translateY = function (y) {
         mesh.translateY(y);
+        if (gotBall) {
+            gameBall.getMesh().translateY(y);
+        }
         //mesh.position.set(mesh.position.x, mesh.poisition.y + y, mesh.position.z);
-        Camera.translateY(y);
+    };
+    //Getters
+    this.getMesh = function () {
+        return mesh;
+    };
+    this.getMaterials = function () {
+        return mesh.children[0];
+    };
+    this.getGameBall = function () {
+        return gameBall;
     };
 
     this.update = function (dt) {
+        //Throwing ball mechanics
+        if (isShooting) {
+            if (shootingCounter <= SHOOT_MAX_TIME) {
+                shootingCounter += dt;
+            }
+        }
+
+        distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
         //Player movement
         if (velocity.x != 0) {
-            if (velocity.x > 0 && velocity.x <= 0.1 || velocity.x < 0 && velocity.x >= -0.1) velocity.x = 0;else velocity.x -= velocity.x * friction * dt;
+            if (velocity.x > 0 && velocity.x <= 0.1 || velocity.x < 0 && velocity.x >= -0.1) velocity.x = 0;else velocity.x -= velocity.x * FRICTION * dt;
         }
         if (velocity.y != 0) {
-            if (velocity.y > 0 && velocity.y <= 0.1 || velocity.y < 0 && velocity.y >= -0.1) velocity.y = 0;else velocity.y -= velocity.y * friction * dt;
+            if (velocity.y > 0 && velocity.y <= 0.1 || velocity.y < 0 && velocity.y >= -0.1) velocity.y = 0;else velocity.y -= velocity.y * FRICTION * dt;
         }
 
         direction.y = Number(moveDown) - Number(moveUp);
         direction.x = Number(moveLeft) - Number(moveRight);
         direction.normalize(); // this ensures consistent movements in all directions
         if (moveUp || moveDown) {
-            velocity.y -= direction.y * acceleration * dt; /*
-                                                           if (velocity.y > maxVelocity && velocity.y > 0)
-                                                           velocity.y = maxVelocity;
-                                                           if (velocity.y < -maxVelocity && velocity.y < 0)
-                                                           velocity.y = -maxVelocity;
-                                                           */
+            velocity.y -= direction.y * ACCELERATION * dt;
         }
         if (moveLeft || moveRight) {
-            velocity.x -= direction.x * acceleration * dt;
-            /*
-            if (velocity.x > maxVelocity)
-                velocity.x = maxVelocity;
-            if (velocity.x < -maxVelocity && velocity.x < 0)
-                velocity.x = -maxVelocity;
-                */
+            velocity.x -= direction.x * ACCELERATION * dt;
         }
         if (velocity.x != 0) this.translateX(velocity.x * dt);
         if (velocity.y != 0) this.translateY(velocity.y * dt);
 
         //console.log("Dt Player: " + dt);
     };
-} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-;
+};
 
 exports.Player = Player;
 
-},{"../../scripts/PlayerController":11,"./PlayerMesh":4,"three":1}],4:[function(require,module,exports){
+},{"../../scripts/PlayerController":13,"./PlayerMesh":6,"three":1}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47837,7 +47975,7 @@ var _three = require('three');
 
 function PlayerMesh() {
     //Atts
-    var playerSize = 5;
+    var playerSize = 6.5;
     var geometryTriangles = 32;
     var indicatorSize = 1;
     var indicatorTriangles = 8;
@@ -47862,6 +48000,7 @@ function PlayerMesh() {
     player_indicator_mesh.position.set(0, 3, 0);
     playerMaterials.add(player_indicator_mesh);
     player.add(playerMaterials);
+    player.position.set(0, 0, 0.1);
     //player_indicator_mesh.updateMatrix();
     //player_geometry.merge(player_indicator_mesh.geometry, player_indicator_mesh.matrix, 1);
 
@@ -47875,7 +48014,7 @@ function PlayerMesh() {
 
 exports.PlayerMesh = PlayerMesh;
 
-},{"three":1}],5:[function(require,module,exports){
+},{"three":1}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -47934,7 +48073,7 @@ var ObjectToShow = {
 
 exports.ObjectToShow = ObjectToShow;
 
-},{"three":1}],6:[function(require,module,exports){
+},{"three":1}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47949,7 +48088,7 @@ var THREE = _interopRequireWildcard(_three);
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 // floor
-var floorGeometry = new THREE.PlaneBufferGeometry(200, 200);
+var floorGeometry = new THREE.PlaneBufferGeometry(280, 180);
 //floorGeometry.rotateX( - Math.PI / 2 );
 // vertex displacement
 /*var position = floorGeometry.attributes.position;
@@ -47975,7 +48114,7 @@ Floor.position.set(0, 0, -1);
 
 exports.Floor = Floor;
 
-},{"three":1}],7:[function(require,module,exports){
+},{"three":1}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47998,7 +48137,7 @@ function MainMap(scene) {
 
 exports.MainMap = MainMap;
 
-},{"./Floor":6}],8:[function(require,module,exports){
+},{"./Floor":8}],10:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -48079,7 +48218,7 @@ if ((typeof module === 'undefined' ? 'undefined' : _typeof(module)) === 'object'
 		module.exports = Detector;
 }
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var _three = require('three');
@@ -48184,7 +48323,7 @@ function Update(){
     
 }*/
 
-},{"./SceneManager":2,"./commons/Detector":8,"three":1}],10:[function(require,module,exports){
+},{"./SceneManager":2,"./commons/Detector":10,"three":1}],12:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -48196,19 +48335,34 @@ var _three = require('three');
 
 var _Player = require('./../assets/Player/Player');
 
+var _Ball = require('./../assets/Ball/Ball');
+
 var _MainMap = require('./../assets/environment/MainMap');
 
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
 function PrincipalScene() {
     var scene = new _three.Scene();
     scene.background = new _three.Color("#000");
-    var player = new _Player.Player(scene);
+    var aspectRatio = window.innerWidth / window.innerHeight;
+    var fieldOfView = 45;
+    var nearPlane = 1;
+    var farPlane = 500;
+    var cameraDistanceToPlayer = 250;
+    var Camera = new _three.PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
+    Camera.position.set(0, 0, cameraDistanceToPlayer);
+    Camera.lookAt(0, 0, 0);
+    scene.add(Camera);
+    var ball = new _Ball.Ball(scene);
+    var player = new _Player.Player(scene, Camera, ball);
+    //player.getMesh().position.set(-50,0,0);
+
     this.getScene = function () {
         return scene;
     };
     this.getCamera = function () {
-        return player.getCamera();
+        return Camera;
     };
-    var SceneSubjects = [player, new _MainMap.MainMap(scene)];
+    var SceneSubjects = [player, ball, new _MainMap.MainMap(scene)];
 
     this.update = function (dt) {
         //console.log("DT PrincipalScene" + dt);
@@ -48216,18 +48370,22 @@ function PrincipalScene() {
             SceneSubjects[i].update(dt);
         }
     };
-} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-;
+};
 exports.PrincipalScene = PrincipalScene;
 
-},{"./../assets/Player/Player":3,"./../assets/environment/MainMap":7,"three":1}],11:[function(require,module,exports){
+},{"./../assets/Ball/Ball":3,"./../assets/Player/Player":5,"./../assets/environment/MainMap":9,"three":1}],13:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-function PlayerController(player) {
+exports.PlayerController = undefined;
+
+var _three = require('three');
+
+function PlayerController(player, sCamera) {
     var Player = player;
+    var Camera = sCamera;
     var onKeyDown = function onKeyDown(event) {
         switch (event.keyCode) {
             case 38: // up
@@ -48276,31 +48434,33 @@ function PlayerController(player) {
                 break;
         }
     };
-    var windowHalfX = window.innerWidth / 2;
-    var windowHalfY = window.innerHeight / 2;
-    var mouseX = 0;
-    var mouseY = 0;
-    var onMouseMove = function onMouseMove(event) {
-        mouseX = event.clientX + 0.5 - windowHalfX;
-        mouseY = event.clientY + 0.5 - windowHalfY;
-        var x = mouseX;
-        var y = -mouseY;
-        var alfa;
-        alfa = Math.atan(y / x);
-        alfa = alfa * 180 / Math.PI;
+    var onMouseDown = function onMouseDown() {
 
-        if (Math.sign(x) === -1) alfa += 180;
+        Player.onMouseDown();
+    };
+    var vec = new _three.Vector3(); // create once and reuse
+    var pos = new _three.Vector3(); // create once and reuse
+    var onMouseUp = function onMouseUp() {
+        vec.set(event.clientX / window.innerWidth * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5);
 
-        var rotation = (alfa - 90) * Math.PI / 180;
+        vec.unproject(Camera);
 
-        Player.getMaterials().rotation.set(0, 0, rotation);
+        vec.sub(Camera.position).normalize();
+
+        var distance = -Camera.position.z / vec.z;
+
+        pos.copy(Camera.position).add(vec.multiplyScalar(distance));
+        pos.x -= Player.getMesh().position.x;
+        pos.y -= Player.getMesh().position.y;
+        Player.onMouseUp(pos.x, pos.y);
     };
 
     document.addEventListener('keydown', onKeyDown, false);
     document.addEventListener('keyup', onKeyUp, false);
-    document.addEventListener('mousemove', onMouseMove, false);
+    document.addEventListener('mousedown', onMouseDown, false);
+    document.addEventListener('mouseup', onMouseUp, false);
 }
 exports.PlayerController = PlayerController;
 
-},{}]},{},[9])
+},{"three":1}]},{},[11])
 //# sourceMappingURL=bundle.js.map

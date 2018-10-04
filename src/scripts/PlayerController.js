@@ -1,5 +1,7 @@
-function PlayerController(player) {
+import { Vector3 } from 'three';
+function PlayerController(player, sCamera) {
     var Player = player;
+    var Camera = sCamera;
     var onKeyDown = function (event) {
         switch (event.keyCode) {
             case 38: // up
@@ -40,30 +42,36 @@ function PlayerController(player) {
                 break;
         }
     };
-    var windowHalfX = window.innerWidth / 2;
-    var windowHalfY = window.innerHeight / 2;
-    var mouseX = 0;
-    var mouseY = 0;
-    var onMouseMove = function (event) {
-        mouseX = ((event.clientX + 0.5) - windowHalfX);
-        mouseY = ((event.clientY + 0.5) - windowHalfY);
-        var x = mouseX;
-        var y = -mouseY;
-        var alfa;
-        alfa = Math.atan(y / x);
-        alfa = (alfa * 180) / Math.PI;
+    var onMouseDown = function () {
 
-        if (Math.sign(x) === -1)
-            alfa += 180;
+        Player.onMouseDown();
+    };
+    var vec = new Vector3(); // create once and reuse
+    var pos = new Vector3(); // create once and reuse
+    var onMouseUp = function () {
+        vec.set(
+            (event.clientX / window.innerWidth) * 2 - 1,
+            - (event.clientY / window.innerHeight) * 2 + 1,
+            0.5);
+
+        vec.unproject(Camera);
+
+        vec.sub(Camera.position).normalize();
+
+        var distance = - Camera.position.z / vec.z;
+
+        pos.copy(Camera.position).add(vec.multiplyScalar(distance));
+        pos.x -= Player.getMesh().position.x;
+        pos.y -= Player.getMesh().position.y;
+        Player.onMouseUp(pos.x, pos.y);
         
-        var rotation = ((alfa - 90) * Math.PI) / 180;
 
-
-        Player.getMaterials().rotation.set(0, 0, rotation);
-    }
+    };
 
     document.addEventListener('keydown', onKeyDown, false);
     document.addEventListener('keyup', onKeyUp, false);
-    document.addEventListener('mousemove', onMouseMove, false);
+    document.addEventListener('mousedown', onMouseDown, false);
+    document.addEventListener('mouseup', onMouseUp, false);
+
 }
 export { PlayerController };
