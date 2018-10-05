@@ -2,14 +2,15 @@
 import { Vector3 } from 'three';
 import { BallMesh } from './BallMesh';
 
-const FRICTION = 2;
-const STOP_FRICTION_VEL = 10;
+const FRICTION = 1;
+const STOP_FRICTION_VEL = 5;
 
 function Ball(scene) {
     //Ball atts
     var velocity = new Vector3();
     var direction = new Vector3();
     var forceImpulse = 0;
+    var stopMovement = false;
     //Ball Components
     const mesh = BallMesh();
     //Components to the scene
@@ -37,7 +38,10 @@ function Ball(scene) {
     this.translateY = function (y) {
         mesh.translateY(y);
     };
-    var stopMovement = false;
+    this.stopMovement = function(){
+        stopMovement = true;
+    };
+    
     this.update = function (dt) {
         //Ball movement
 

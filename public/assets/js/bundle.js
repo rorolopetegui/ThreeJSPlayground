@@ -47724,14 +47724,15 @@ var _three = require('three');
 var _BallMesh = require('./BallMesh');
 
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-var FRICTION = 2;
-var STOP_FRICTION_VEL = 10;
+var FRICTION = 1;
+var STOP_FRICTION_VEL = 5;
 
 function Ball(scene) {
     //Ball atts
     var velocity = new _three.Vector3();
     var direction = new _three.Vector3();
     var forceImpulse = 0;
+    var stopMovement = false;
     //Ball Components
     var mesh = (0, _BallMesh.BallMesh)();
     //Components to the scene
@@ -47759,7 +47760,10 @@ function Ball(scene) {
     this.translateY = function (y) {
         mesh.translateY(y);
     };
-    var stopMovement = false;
+    this.stopMovement = function () {
+        stopMovement = true;
+    };
+
     this.update = function (dt) {
         //Ball movement
 
@@ -47870,7 +47874,6 @@ function Player(scene, Camera, ball) {
     //Controls
     this.onMouseDown = function () {
         if (gotBall) {
-
             isShooting = true;
         }
     };
@@ -47887,6 +47890,7 @@ function Player(scene, Camera, ball) {
             shootingCounter = 0;
         } else {
             if (distanceToBall < 100) {
+                gameBall.stopMovement();
                 gotBall = true;
             }
         }
@@ -47973,32 +47977,34 @@ exports.PlayerMesh = undefined;
 
 var _three = require('three');
 
+var PLAYER_SIZE = 6.5;
+var PLAYER_GEOMETRY_TRIANGLES = 32;
+var PLAYER_BODY_COLOR = 0xffff00;
+
 function PlayerMesh() {
     //Atts
-    var playerSize = 6.5;
-    var geometryTriangles = 32;
-    var indicatorSize = 1;
-    var indicatorTriangles = 8;
-    var playerBodyColor = 0xffff00;
-    var indicatorColor = 0x00ff00;
+
+    /*const indicatorSize = 1;
+    const indicatorTriangles = 8;
+    const indicatorColor = 0x00ff00;*/
     //Atts
     var player = new _three.Object3D();
     var playerMaterials = new _three.Object3D();
     //var player_geometry = new Geometry();
 
-    var player_body_geometry = new _three.CircleGeometry(playerSize, geometryTriangles);
-    var player_body_material = new _three.MeshBasicMaterial({ color: playerBodyColor });
+    var player_body_geometry = new _three.CircleGeometry(PLAYER_SIZE, PLAYER_GEOMETRY_TRIANGLES);
+    var player_body_material = new _three.MeshBasicMaterial({ color: PLAYER_BODY_COLOR });
     var player_body_mesh = new _three.Mesh(player_body_geometry, player_body_material);
     playerMaterials.add(player_body_mesh);
     /*player_body_mesh.updateMatrix();
     player_geometry.merge(player_body_mesh.geometry, player_body_mesh.matrix, 0);*/
 
-    var player_indicator_geometry = new _three.CircleGeometry(indicatorSize, indicatorTriangles);
-    var player_indicator_material = new _three.MeshBasicMaterial({ color: indicatorColor });
-    var player_indicator_mesh = new _three.Mesh(player_indicator_geometry, player_indicator_material);
+    /*const player_indicator_geometry = new CircleGeometry(indicatorSize, indicatorTriangles);
+    const player_indicator_material = new MeshBasicMaterial({ color: indicatorColor });
+    const player_indicator_mesh = new Mesh(player_indicator_geometry, player_indicator_material);
     //player_indicator_mesh.z = 2;
     player_indicator_mesh.position.set(0, 3, 0);
-    playerMaterials.add(player_indicator_mesh);
+    playerMaterials.add(player_indicator_mesh);*/
     player.add(playerMaterials);
     player.position.set(0, 0, 0.1);
     //player_indicator_mesh.updateMatrix();
@@ -48079,65 +48085,110 @@ exports.ObjectToShow = ObjectToShow;
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Floor = undefined;
+exports.Court = undefined;
 
-var _three = require('three');
+var _CourtMesh = require('./CourtMesh');
 
-var THREE = _interopRequireWildcard(_three);
+var COURT_SIZE_WIDTH = 280; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+var COURT_SIZE_HEIGHT = 180;
 
-// floor
-var floorGeometry = new THREE.PlaneBufferGeometry(280, 180);
-//floorGeometry.rotateX( - Math.PI / 2 );
-// vertex displacement
-/*var position = floorGeometry.attributes.position;
-for ( var i = 0, l = position.count; i < l; i ++ ) {
-    vertex.fromBufferAttribute( position, i );
-    vertex.x += Math.random() * 20 - 10;
-    vertex.y += Math.random() * 2;
-    vertex.z += Math.random() * 20 - 10;
-    position.setXYZ( i, vertex.x, vertex.y, vertex.z );
-}
-floorGeometry = floorGeometry.toNonIndexed(); // ensure each face has unique vertices
-position = floorGeometry.attributes.position;
-var colors = [];
-for ( var i = 0, l = position.count; i < l; i ++ ) {
-    color.setHSL( Math.random() * 0.3 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
-    colors.push( color.r, color.g, color.b );
-}
-floorGeometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-var floorMaterial = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } ); */
-var floorMaterial = new THREE.MeshBasicMaterial({ color: 0x1F3E0F });
-var Floor = new THREE.Mesh(floorGeometry, floorMaterial);
-Floor.position.set(0, 0, -1);
+function Court(scene) {
+    //Court Attributes 
+    //Court Components
+    var mesh = (0, _CourtMesh.CourtMesh)(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT);
 
-exports.Floor = Floor;
+    //Components to the scene
+    scene.add(mesh);
 
-},{"three":1}],9:[function(require,module,exports){
+    this.update = function (dt) {
+        return;
+    };
+};
+
+exports.Court = Court;
+
+},{"./CourtMesh":9}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.MainMap = undefined;
+exports.CourtMesh = undefined;
 
-var _Floor = require('./Floor');
+var _three = require('three');
 
-function MainMap(scene) {
-    //mesh.position.set(0, 0, -20);
-    scene.add(_Floor.Floor);
+var COURT_TEAM_ONE_COLOR = 0x445463;
+var COURT_TEAM_TWO_COLOR = 0x446353;
+var COURT_LINES_COLOR = 0x2B2F37;
 
-    this.update = function (dt) {
-        return;
-        //console.log("Dt Player: " + dt);
-    };
-} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-;
+function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
+    var court_team_size_height = COURT_SIZE_HEIGHT;
+    var court_team_size_width = COURT_SIZE_WIDTH / 2;
+    //Wrapper
+    var Court = new _three.Object3D();
+    var teamOneCourt = new _three.Object3D();
+    var teamTwoCourt = new _three.Object3D();
+    var courtLines = new _three.Object3D();
 
-exports.MainMap = MainMap;
+    //Team1
+    var team_one_geometry = new _three.PlaneBufferGeometry(court_team_size_width, court_team_size_height);
+    var team_one_material = new _three.MeshBasicMaterial({ color: COURT_TEAM_ONE_COLOR });
+    var team_one_mesh = new _three.Mesh(team_one_geometry, team_one_material);
+    team_one_mesh.position.set(court_team_size_width / 2, 0, -1);
+    teamOneCourt.add(team_one_mesh);
 
-},{"./Floor":8}],10:[function(require,module,exports){
+    //Team2
+    var team_two_geometry = new _three.PlaneBufferGeometry(court_team_size_width, court_team_size_height);
+    var team_two_material = new _three.MeshBasicMaterial({ color: COURT_TEAM_TWO_COLOR });
+    var team_two_mesh = new _three.Mesh(team_two_geometry, team_two_material);
+    team_two_mesh.position.set(-court_team_size_width / 2, 0, -1);
+    teamTwoCourt.add(team_two_mesh);
+
+    //LINES
+    var line_anchor = COURT_SIZE_HEIGHT * 0.03;
+    var auxHeightPos = COURT_SIZE_HEIGHT / 2 - 2.5;
+    var auxWidthPos = court_team_size_width - 2.5;
+    //TOP
+    var court_lines_material = new _three.MeshBasicMaterial({ color: COURT_LINES_COLOR });
+    var court_lines_geometry_top = new _three.PlaneBufferGeometry(COURT_SIZE_WIDTH, line_anchor);
+    var court_lines_mesh_top = new _three.Mesh(court_lines_geometry_top, court_lines_material);
+    court_lines_mesh_top.position.set(0, auxHeightPos, -0.9);
+    courtLines.add(court_lines_mesh_top);
+    //BOTTOM
+    var court_lines_geometry_bottom = new _three.PlaneBufferGeometry(COURT_SIZE_WIDTH, line_anchor);
+    var court_lines_mesh_bottom = new _three.Mesh(court_lines_geometry_bottom, court_lines_material);
+    court_lines_mesh_bottom.position.set(0, -auxHeightPos, -0.9);
+    courtLines.add(court_lines_mesh_bottom);
+    //LEFT
+    var court_lines_geometry_left = new _three.PlaneBufferGeometry(line_anchor, COURT_SIZE_HEIGHT);
+    var court_lines_mesh_left = new _three.Mesh(court_lines_geometry_left, court_lines_material);
+    court_lines_mesh_left.position.set(-auxWidthPos, 0, -0.9);
+    courtLines.add(court_lines_mesh_left);
+    //RIGHT
+    var court_lines_geometry_right = new _three.PlaneBufferGeometry(line_anchor, COURT_SIZE_HEIGHT);
+    var court_lines_mesh_right = new _three.Mesh(court_lines_geometry_right, court_lines_material);
+    court_lines_mesh_right.position.set(auxWidthPos, 0, -0.9);
+    courtLines.add(court_lines_mesh_right);
+    //MID
+    var court_lines_geometry_mid = new _three.PlaneBufferGeometry(line_anchor, COURT_SIZE_HEIGHT);
+    var court_lines_mesh_mid = new _three.Mesh(court_lines_geometry_mid, court_lines_material);
+    court_lines_mesh_mid.position.set(0, 0, -0.9);
+    courtLines.add(court_lines_mesh_mid);
+
+    //Adding both team courts to the wrapper
+    Court.add(teamOneCourt);
+    Court.add(teamTwoCourt);
+    Court.add(courtLines);
+    //Setting position to the scene
+    Court.position.set(0, 0, -1);
+
+    return Court;
+};
+
+exports.CourtMesh = CourtMesh;
+
+},{"three":1}],10:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -48337,7 +48388,7 @@ var _Player = require('./../assets/Player/Player');
 
 var _Ball = require('./../assets/Ball/Ball');
 
-var _MainMap = require('./../assets/environment/MainMap');
+var _Court = require('./../assets/environment/Court/Court');
 
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 function PrincipalScene() {
@@ -48354,6 +48405,7 @@ function PrincipalScene() {
     scene.add(Camera);
     var ball = new _Ball.Ball(scene);
     var player = new _Player.Player(scene, Camera, ball);
+    var court = new _Court.Court(scene);
     //player.getMesh().position.set(-50,0,0);
 
     this.getScene = function () {
@@ -48362,7 +48414,7 @@ function PrincipalScene() {
     this.getCamera = function () {
         return Camera;
     };
-    var SceneSubjects = [player, ball, new _MainMap.MainMap(scene)];
+    var SceneSubjects = [player, ball, court];
 
     this.update = function (dt) {
         //console.log("DT PrincipalScene" + dt);
@@ -48373,7 +48425,7 @@ function PrincipalScene() {
 };
 exports.PrincipalScene = PrincipalScene;
 
-},{"./../assets/Ball/Ball":3,"./../assets/Player/Player":5,"./../assets/environment/MainMap":9,"three":1}],13:[function(require,module,exports){
+},{"./../assets/Ball/Ball":3,"./../assets/Player/Player":5,"./../assets/environment/Court/Court":8,"three":1}],13:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

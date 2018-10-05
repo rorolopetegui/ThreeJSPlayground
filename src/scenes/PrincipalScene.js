@@ -2,7 +2,7 @@
 import { Scene, Color, PerspectiveCamera } from 'three';
 import { Player } from './../assets/Player/Player';
 import { Ball } from './../assets/Ball/Ball';
-import { MainMap } from './../assets/environment/MainMap';
+import { Court } from './../assets/environment/Court/Court';
 
 function PrincipalScene() {
     const scene = new Scene();
@@ -18,6 +18,7 @@ function PrincipalScene() {
     scene.add(Camera);
     const ball = new Ball(scene);
     const player = new Player(scene, Camera, ball);
+    const court = new Court(scene);
     //player.getMesh().position.set(-50,0,0);
 
     this.getScene = function () {
@@ -29,7 +30,7 @@ function PrincipalScene() {
     const SceneSubjects = [
         player,
         ball,
-        new MainMap(scene),
+        court,
     ];
 
     this.update = function (dt) {

@@ -41,7 +41,6 @@ function Player(scene, Camera, ball) {
     //Controls
     this.onMouseDown = function () {
         if (gotBall) {
-            
             isShooting = true;
         }
     };
@@ -58,6 +57,7 @@ function Player(scene, Camera, ball) {
             shootingCounter = 0;
         } else {
             if (distanceToBall < 100) {
+                gameBall.stopMovement();
                 gotBall = true;
             }
         }
