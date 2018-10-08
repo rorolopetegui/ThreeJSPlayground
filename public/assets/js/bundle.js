@@ -47726,8 +47726,50 @@ var _BallMesh = require('./BallMesh');
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 var FRICTION = 1;
 var STOP_FRICTION_VEL = 5;
+var OUT_OF_BOUNDS = false;
+var REFLECTION_DISTANCE = 10;
+
+var distanceToOutOfBounds;
+var mostCloseLine;
+//Functions
+function calculateReflection(ball, courtLines, velocity) {
+    var vel = velocity;
+    if (!OUT_OF_BOUNDS) {
+        checkOutOfBounds(courtLines, ball);
+        if (REFLECTION_DISTANCE >= distanceToOutOfBounds) {}
+    }
+    return vel;
+};
+
+function checkOutOfBounds(courtLines, ball) {
+    var distance = 0;
+    distanceToOutOfBounds = 1000;
+    var dx = 100;
+    var dy = 100;
+    courtLines.children.forEach(function (line) {
+        if (line.name !== "COURT_LINES_MID_MESH") {
+            if (line.name === "COURT_LINES_TOP_MESH" || line.name === "COURT_LINES_BOTTOM_MESH") {
+                dx = 0;
+                dy = ball.position.y - line.position.y;
+            } else if (line.name === "COURT_LINES_LEFT_MESH" || line.name === "COURT_LINES_RIGHT_MESH") {
+                dx = ball.position.x - line.position.x;
+                dy = 0;
+            }
+
+            distance = Math.sqrt(dx * dx + dy * dy);
+            mostCloseLine = distanceToOutOfBounds > distance ? line : mostCloseLine;
+            distanceToOutOfBounds = distanceToOutOfBounds > distance ? distance : distanceToOutOfBounds;
+        }
+    });
+    return distance;
+}
 
 function Ball(scene) {
+    //Helpers
+    //Save Scene in case that needed
+    var Scene = scene;
+    var courtLines = Scene.getObjectByName("COURT_LINES");
+    mostCloseLine = courtLines.getObjectByName("COURT_LINES_TOP_MESH");
     //Ball atts
     var velocity = new _three.Vector3();
     var direction = new _three.Vector3();
@@ -47735,8 +47777,9 @@ function Ball(scene) {
     var stopMovement = false;
     //Ball Components
     var mesh = (0, _BallMesh.BallMesh)();
+    mesh.name = "Ball";
     //Components to the scene
-    scene.add(mesh);
+    Scene.add(mesh);
     //setters
     this.shootBall = function (x, y, force) {
         direction.x = x;
@@ -47766,7 +47809,9 @@ function Ball(scene) {
 
     this.update = function (dt) {
         //Ball movement
-
+        if (velocity.x != 0 || velocity.y != 0) {
+            velocity = calculateReflection(mesh, courtLines, velocity);
+        }
         if (velocity.x != 0) {
             if (velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL || velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL) stopMovement = true;else velocity.x -= velocity.x * FRICTION * dt;
         }
@@ -47864,7 +47909,7 @@ function Player(scene, Camera, ball) {
     //Player Attributes 
     //Player Components
     var mesh = (0, _PlayerMesh.PlayerMesh)();
-
+    mesh.name = "Player";
     //Components to the scene
     scene.add(mesh);
     //Components to the scene
@@ -47926,7 +47971,7 @@ function Player(scene, Camera, ball) {
         return mesh;
     };
     this.getMaterials = function () {
-        return mesh.children[0];
+        return mesh.getObjectByName("PLAYER_MATERIALS");
     };
     this.getGameBall = function () {
         return gameBall;
@@ -47968,14 +48013,14 @@ function Player(scene, Camera, ball) {
 exports.Player = Player;
 
 },{"../../scripts/PlayerController":13,"./PlayerMesh":6,"three":1}],6:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.PlayerMesh = undefined;
 
-var _three = require('three');
+var _three = require("three");
 
 var PLAYER_SIZE = 6.5;
 var PLAYER_GEOMETRY_TRIANGLES = 32;
@@ -47989,7 +48034,9 @@ function PlayerMesh() {
     const indicatorColor = 0x00ff00;*/
     //Atts
     var player = new _three.Object3D();
+    player.name = "PLAYER_WRAPPER";
     var playerMaterials = new _three.Object3D();
+    playerMaterials.name = "PLAYER_MATERIALS";
     //var player_geometry = new Geometry();
 
     var player_body_geometry = new _three.CircleGeometry(PLAYER_SIZE, PLAYER_GEOMETRY_TRIANGLES);
@@ -48006,6 +48053,7 @@ function PlayerMesh() {
     player_indicator_mesh.position.set(0, 3, 0);
     playerMaterials.add(player_indicator_mesh);*/
     player.add(playerMaterials);
+
     player.position.set(0, 0, 0.1);
     //player_indicator_mesh.updateMatrix();
     //player_geometry.merge(player_indicator_mesh.geometry, player_indicator_mesh.matrix, 1);
@@ -48080,26 +48128,32 @@ var ObjectToShow = {
 exports.ObjectToShow = ObjectToShow;
 
 },{"three":1}],8:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.Court = undefined;
 
-var _CourtMesh = require('./CourtMesh');
+var _CourtMesh = require("./CourtMesh");
 
 var COURT_SIZE_WIDTH = 280; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 
 var COURT_SIZE_HEIGHT = 180;
 
 function Court(scene) {
+
     //Court Attributes 
     //Court Components
     var mesh = (0, _CourtMesh.CourtMesh)(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT);
-
+    mesh.name = "Court";
     //Components to the scene
     scene.add(mesh);
+
+    //Getters
+    this.getCourtLines = function () {
+        return mesh.getObjectByName("COURT_LINES");
+    };
 
     this.update = function (dt) {
         return;
@@ -48109,14 +48163,14 @@ function Court(scene) {
 exports.Court = Court;
 
 },{"./CourtMesh":9}],9:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.CourtMesh = undefined;
 
-var _three = require('three');
+var _three = require("three");
 
 var COURT_TEAM_ONE_COLOR = 0x445463;
 var COURT_TEAM_TWO_COLOR = 0x446353;
@@ -48128,13 +48182,17 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     //Wrapper
     var Court = new _three.Object3D();
     var teamOneCourt = new _three.Object3D();
+    teamOneCourt.name = "COURT_TEAM_ONE_FLOOR";
     var teamTwoCourt = new _three.Object3D();
+    teamTwoCourt.name = "COURT_TEAM_TWO_FLOOR";
     var courtLines = new _three.Object3D();
+    courtLines.name = "COURT_LINES";
 
     //Team1
     var team_one_geometry = new _three.PlaneBufferGeometry(court_team_size_width, court_team_size_height);
     var team_one_material = new _three.MeshBasicMaterial({ color: COURT_TEAM_ONE_COLOR });
     var team_one_mesh = new _three.Mesh(team_one_geometry, team_one_material);
+    team_one_mesh.name = "TEAM_ONE_FLOOR_MESH";
     team_one_mesh.position.set(court_team_size_width / 2, 0, -1);
     teamOneCourt.add(team_one_mesh);
 
@@ -48142,6 +48200,7 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     var team_two_geometry = new _three.PlaneBufferGeometry(court_team_size_width, court_team_size_height);
     var team_two_material = new _three.MeshBasicMaterial({ color: COURT_TEAM_TWO_COLOR });
     var team_two_mesh = new _three.Mesh(team_two_geometry, team_two_material);
+    team_one_mesh.name = "TEAM_TWO_FLOOR_MESH";
     team_two_mesh.position.set(-court_team_size_width / 2, 0, -1);
     teamTwoCourt.add(team_two_mesh);
 
@@ -48153,26 +48212,31 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     var court_lines_material = new _three.MeshBasicMaterial({ color: COURT_LINES_COLOR });
     var court_lines_geometry_top = new _three.PlaneBufferGeometry(COURT_SIZE_WIDTH, line_anchor);
     var court_lines_mesh_top = new _three.Mesh(court_lines_geometry_top, court_lines_material);
+    court_lines_mesh_top.name = "COURT_LINES_TOP_MESH";
     court_lines_mesh_top.position.set(0, auxHeightPos, -0.9);
     courtLines.add(court_lines_mesh_top);
     //BOTTOM
     var court_lines_geometry_bottom = new _three.PlaneBufferGeometry(COURT_SIZE_WIDTH, line_anchor);
     var court_lines_mesh_bottom = new _three.Mesh(court_lines_geometry_bottom, court_lines_material);
+    court_lines_mesh_bottom.name = "COURT_LINES_BOTTOM_MESH";
     court_lines_mesh_bottom.position.set(0, -auxHeightPos, -0.9);
     courtLines.add(court_lines_mesh_bottom);
     //LEFT
     var court_lines_geometry_left = new _three.PlaneBufferGeometry(line_anchor, COURT_SIZE_HEIGHT);
     var court_lines_mesh_left = new _three.Mesh(court_lines_geometry_left, court_lines_material);
+    court_lines_mesh_left.name = "COURT_LINES_LEFT_MESH";
     court_lines_mesh_left.position.set(-auxWidthPos, 0, -0.9);
     courtLines.add(court_lines_mesh_left);
     //RIGHT
     var court_lines_geometry_right = new _three.PlaneBufferGeometry(line_anchor, COURT_SIZE_HEIGHT);
     var court_lines_mesh_right = new _three.Mesh(court_lines_geometry_right, court_lines_material);
+    court_lines_mesh_right.name = "COURT_LINES_RIGHT_MESH";
     court_lines_mesh_right.position.set(auxWidthPos, 0, -0.9);
     courtLines.add(court_lines_mesh_right);
     //MID
     var court_lines_geometry_mid = new _three.PlaneBufferGeometry(line_anchor, COURT_SIZE_HEIGHT);
     var court_lines_mesh_mid = new _three.Mesh(court_lines_geometry_mid, court_lines_material);
+    court_lines_mesh_mid.name = "COURT_LINES_MID_MESH";
     court_lines_mesh_mid.position.set(0, 0, -0.9);
     courtLines.add(court_lines_mesh_mid);
 
@@ -48400,12 +48464,15 @@ function PrincipalScene() {
     var farPlane = 500;
     var cameraDistanceToPlayer = 250;
     var Camera = new _three.PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
+    Camera.name = "Camera";
     Camera.position.set(0, 0, cameraDistanceToPlayer);
     Camera.lookAt(0, 0, 0);
     scene.add(Camera);
+    //Need to declare the environment first cause the entities in it may be use some of the atts that court have
+    var court = new _Court.Court(scene);
     var ball = new _Ball.Ball(scene);
     var player = new _Player.Player(scene, Camera, ball);
-    var court = new _Court.Court(scene);
+
     //player.getMesh().position.set(-50,0,0);
 
     this.getScene = function () {
@@ -48414,7 +48481,7 @@ function PrincipalScene() {
     this.getCamera = function () {
         return Camera;
     };
-    var SceneSubjects = [player, ball, court];
+    var SceneSubjects = [court, player, ball];
 
     this.update = function (dt) {
         //console.log("DT PrincipalScene" + dt);

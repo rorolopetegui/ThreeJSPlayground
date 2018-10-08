@@ -13,12 +13,15 @@ function PrincipalScene() {
     const farPlane = 500;
     const cameraDistanceToPlayer = 250;
     const Camera = new PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
+    Camera.name = "Camera";
     Camera.position.set(0, 0, cameraDistanceToPlayer);
     Camera.lookAt(0, 0, 0);
     scene.add(Camera);
+    //Need to declare the environment first cause the entities in it may be use some of the atts that court have
+    const court = new Court(scene);
     const ball = new Ball(scene);
     const player = new Player(scene, Camera, ball);
-    const court = new Court(scene);
+    
     //player.getMesh().position.set(-50,0,0);
 
     this.getScene = function () {
@@ -28,9 +31,9 @@ function PrincipalScene() {
         return Camera;
     };
     const SceneSubjects = [
+        court,
         player,
         ball,
-        court,
     ];
 
     this.update = function (dt) {

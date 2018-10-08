@@ -12,7 +12,9 @@ function PlayerMesh() {
     const indicatorColor = 0x00ff00;*/
     //Atts
     var player = new Object3D();
+    player.name = "PLAYER_WRAPPER";
     var playerMaterials = new Object3D();
+    playerMaterials.name = "PLAYER_MATERIALS";
     //var player_geometry = new Geometry();
 
     const player_body_geometry = new CircleGeometry(PLAYER_SIZE, PLAYER_GEOMETRY_TRIANGLES);
@@ -29,6 +31,7 @@ function PlayerMesh() {
     player_indicator_mesh.position.set(0, 3, 0);
     playerMaterials.add(player_indicator_mesh);*/
     player.add(playerMaterials);
+    
     player.position.set(0, 0, 0.1);
     //player_indicator_mesh.updateMatrix();
     //player_geometry.merge(player_indicator_mesh.geometry, player_indicator_mesh.matrix, 1);

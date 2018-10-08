@@ -31,7 +31,7 @@ function Player(scene, Camera, ball) {
     //Player Attributes 
     //Player Components
     const mesh = PlayerMesh();
-
+    mesh.name = "Player";
     //Components to the scene
     scene.add(mesh);
     //Components to the scene
@@ -93,7 +93,7 @@ function Player(scene, Camera, ball) {
         return mesh;
     };
     this.getMaterials = function () {
-        return mesh.children[0];
+        return mesh.getObjectByName("PLAYER_MATERIALS");
     };
     this.getGameBall = function () {
         return gameBall;
