@@ -35,7 +35,7 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
 
 
     //LINES
-    var line_anchor = COURT_SIZE_HEIGHT * 0.03;
+    var line_anchor = 5;
     var auxHeightPos = (COURT_SIZE_HEIGHT / 2) - 2.5;
     var auxWidthPos = court_team_size_width - 2.5;
     //TOP

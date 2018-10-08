@@ -2,34 +2,38 @@
 //import * as THREE from 'three';
 import { Clock } from 'three';
 import { PrincipalScene } from './scenes/PrincipalScene';
-import { ObjectToShow } from './assets/Test';
-
+import { TestScene } from './scenes/TestScene';
+var testEnabled = true;
 
 function SceneManager(canvas) {
-    
+
     const clock = new Clock();
     const screenDimensions = {
         width: window.innerWidth,
         height: window.innerHeight
     }
-    var activeScene = new PrincipalScene();
+    var activeScene;
+    if (!testEnabled)
+        activeScene = new PrincipalScene();
+    else
+        activeScene = new TestScene();
     const camera = activeScene.getCamera();
     const renderer = canvas;
-    if(ObjectToShow.Test)
-        activeScene.getScene().add( ObjectToShow.Test);
+
     this.update = function () {
         const elapsedTime = clock.getDelta();
         activeScene.update(elapsedTime);
+
         renderer.render(activeScene.getScene(), camera);
     }
 
     this.onWindowResize = function () {
-        const width  = window.innerWidth;
-        const height = window.innerHeight*0.993;
+        const width = window.innerWidth;
+        const height = window.innerHeight * 0.993;
         //const width  = window.innerWidth;
         //const height = window.innerHeight;
-        
-        
+
+
         screenDimensions.width = width;
         screenDimensions.height = height;
 

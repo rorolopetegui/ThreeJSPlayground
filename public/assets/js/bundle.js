@@ -47673,7 +47673,11 @@ var _three = require('three');
 
 var _PrincipalScene = require('./scenes/PrincipalScene');
 
-var _Test = require('./assets/Test');
+var _TestScene = require('./scenes/TestScene');
+
+var testEnabled = true; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+//import * as THREE from 'three';
+
 
 function SceneManager(canvas) {
 
@@ -47682,13 +47686,15 @@ function SceneManager(canvas) {
         width: window.innerWidth,
         height: window.innerHeight
     };
-    var activeScene = new _PrincipalScene.PrincipalScene();
+    var activeScene;
+    if (!testEnabled) activeScene = new _PrincipalScene.PrincipalScene();else activeScene = new _TestScene.TestScene();
     var camera = activeScene.getCamera();
     var renderer = canvas;
-    if (_Test.ObjectToShow.Test) activeScene.getScene().add(_Test.ObjectToShow.Test);
+
     this.update = function () {
         var elapsedTime = clock.getDelta();
         activeScene.update(elapsedTime);
+
         renderer.render(activeScene.getScene(), camera);
     };
 
@@ -47707,11 +47713,11 @@ function SceneManager(canvas) {
 
         renderer.setSize(width, height);
     };
-} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-//import * as THREE from 'three';
+}
+
 exports.SceneManager = SceneManager;
 
-},{"./assets/Test":7,"./scenes/PrincipalScene":12,"three":1}],3:[function(require,module,exports){
+},{"./scenes/PrincipalScene":12,"./scenes/TestScene":13,"three":1}],3:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -47732,16 +47738,7 @@ var REFLECTION_DISTANCE = 10;
 var distanceToOutOfBounds;
 var mostCloseLine;
 //Functions
-function calculateReflection(ball, courtLines, velocity) {
-    var vel = velocity;
-    if (!OUT_OF_BOUNDS) {
-        checkOutOfBounds(courtLines, ball);
-        if (REFLECTION_DISTANCE >= distanceToOutOfBounds) {}
-    }
-    return vel;
-};
-
-function checkOutOfBounds(courtLines, ball) {
+function checkOutOfBounds(courtLines, vec) {
     var distance = 0;
     distanceToOutOfBounds = 1000;
     var dx = 100;
@@ -47749,11 +47746,11 @@ function checkOutOfBounds(courtLines, ball) {
     courtLines.children.forEach(function (line) {
         if (line.name !== "COURT_LINES_MID_MESH") {
             if (line.name === "COURT_LINES_TOP_MESH" || line.name === "COURT_LINES_BOTTOM_MESH") {
-                dx = 0;
-                dy = ball.position.y - line.position.y;
+                dx = 0.5;
+                dy = vec.y - line.position.y;
             } else if (line.name === "COURT_LINES_LEFT_MESH" || line.name === "COURT_LINES_RIGHT_MESH") {
-                dx = ball.position.x - line.position.x;
-                dy = 0;
+                dx = vec.x - line.position.x;
+                dy = 0.5;
             }
 
             distance = Math.sqrt(dx * dx + dy * dy);
@@ -47771,8 +47768,8 @@ function Ball(scene) {
     var courtLines = Scene.getObjectByName("COURT_LINES");
     mostCloseLine = courtLines.getObjectByName("COURT_LINES_TOP_MESH");
     //Ball atts
-    var velocity = new _three.Vector3();
-    var direction = new _three.Vector3();
+    var velocity = new Vector3();
+    var direction = new Vector3();
     var forceImpulse = 0;
     var stopMovement = false;
     //Ball Components
@@ -47797,10 +47794,23 @@ function Ball(scene) {
         return mesh.children[0];
     };
     //Controls
-    this.translateX = function (x) {
+    this.translate = function (x, y) {
+        if (!OUT_OF_BOUNDS) {
+            var vec = new _three.Vector2(mesh.position.x + x, mesh.position.y + y);
+            //Loads the most close line to the ball using the next position of the ball
+            checkOutOfBounds(courtLines, vec);
+
+            if (distanceToOutOfBounds < REFLECTION_DISTANCE && distanceToOutOfBounds < REFLECTION_DISTANCE_GRACE) {
+                if (mostCloseLine.name === "COURT_LINES_LEFT_MESH" || mostCloseLine.name === "COURT_LINES_RIGHT_MESH") {
+                    x *= -1;
+                    velocity.x *= -1;
+                } else if (mostCloseLine.name === "COURT_LINES_TOP_MESH" || mostCloseLine.name === "COURT_LINES_BOTTOM_MESH") {
+                    y *= -1;
+                    velocity.y *= -1;
+                }
+            }
+        }
         mesh.translateX(x);
-    };
-    this.translateY = function (y) {
         mesh.translateY(y);
     };
     this.stopMovement = function () {
@@ -47809,14 +47819,19 @@ function Ball(scene) {
 
     this.update = function (dt) {
         //Ball movement
-        if (velocity.x != 0 || velocity.y != 0) {
-            velocity = calculateReflection(mesh, courtLines, velocity);
-        }
         if (velocity.x != 0) {
-            if (velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL || velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL) stopMovement = true;else velocity.x -= velocity.x * FRICTION * dt;
+            if (velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL || velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL) {
+                stopMovement = true;
+            } else {
+                velocity.x -= velocity.x * FRICTION * dt;
+            }
         }
         if (velocity.y != 0) {
-            if (velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL || velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL) stopMovement = true;else velocity.y -= velocity.y * FRICTION * dt;
+            if (velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL || velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL) {
+                stopMovement = true;
+            } else {
+                velocity.y -= velocity.y * FRICTION * dt;
+            }
         }
 
         if (stopMovement) {
@@ -47824,11 +47839,9 @@ function Ball(scene) {
             velocity.y = 0;
             stopMovement = false;
         }
-        if (velocity.x != 0) {
-            this.translateX(velocity.x * dt);
-        }
-        if (velocity.y != 0) {
-            this.translateY(velocity.y * dt);
+
+        if (velocity.x != 0 || velocity.y != 0) {
+            this.translate(velocity.x * dt, velocity.y * dt);
         }
     };
 };
@@ -47836,14 +47849,14 @@ function Ball(scene) {
 exports.Ball = Ball;
 
 },{"./BallMesh":4,"three":1}],4:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.BallMesh = undefined;
 
-var _three = require('three');
+var _three = require("three");
 
 function BallMesh() {
     //Atts
@@ -47856,6 +47869,7 @@ function BallMesh() {
     var ballMaterials = new _three.Object3D();
 
     var ball_body_geometry = new _three.CircleGeometry(ballSize, geometryTriangles);
+    ball_body_geometry.name = "CircleGeometry";
     var ball_body_material = new _three.MeshBasicMaterial({ color: ballBodyColor });
     var ball_body_mesh = new _three.Mesh(ball_body_geometry, ball_body_material);
     ballMaterials.add(ball_body_mesh);
@@ -48012,7 +48026,7 @@ function Player(scene, Camera, ball) {
 
 exports.Player = Player;
 
-},{"../../scripts/PlayerController":13,"./PlayerMesh":6,"three":1}],6:[function(require,module,exports){
+},{"../../scripts/PlayerController":14,"./PlayerMesh":6,"three":1}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48069,65 +48083,109 @@ function PlayerMesh() {
 exports.PlayerMesh = PlayerMesh;
 
 },{"three":1}],7:[function(require,module,exports){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.ObjectToShow = undefined;
+exports.Test = undefined;
 
-var _three = require("three");
+var _three = require('three');
 
 var THREE = _interopRequireWildcard(_three);
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+var _BallMesh = require('./Ball/BallMesh');
 
-var testEnabled = false;
+var _Court = require('./environment/Court/Court');
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 /*
     *TEST CLASS*
 */
+var radius = 4; /*eslint no-unused-vars: ["error", { "varsIgnorePattern": "[iI]gnored" }]*/
 
-var ObjectToShow = {
-    Test: function () {
-        if (testEnabled) {
-            console.log("Testing Mode Enabled");
-            //Atts
-            var playerSize = 5;
-            var geometryTriangles = 32;
-            var indicatorSize = 1;
-            var indicatorTriangles = 8;
-            var playerBodyColor = 0xffff00;
-            var indicatorColor = 0x00ff00;
-            var player = new THREE.Object3D();
-            //Atts
-            var player_body_geometry = new THREE.CircleGeometry(playerSize, geometryTriangles);
-            var player_body_material = new THREE.MeshBasicMaterial({ color: playerBodyColor });
-            var player_body_mesh = new THREE.Mesh(player_body_geometry, player_body_material);
-            player.add(player_body_mesh);
-            var player_indicator_geometry = new THREE.CircleGeometry(indicatorSize, indicatorTriangles);
-            var player_indicator_material = new THREE.MeshBasicMaterial({ color: indicatorColor });
-            var player_indicator_mesh = new THREE.Mesh(player_indicator_geometry, player_indicator_material);
-            player_indicator_mesh.position.set(0, 3, 0);
-            player.add(player_indicator_mesh);
-            player.position.set(10, 10, 0);
-            //player.
-            var group = new THREE.Group();
+var lineHeight = 5 / 2;
+var OUT_OF_BOUNDS = false;
+var REFLECTION_DISTANCE = 8.5;
+var REFLECTION_DISTANCE_GRACE = 7.5;
 
-            group.add(player);
-            //group.add(arrowHelper);
-            //group.add(pendulum);
+var distanceToOutOfBounds;
+var mostCloseLine;
+var direction = 1;
+var bounce = false;
+//Functions
+function checkOutOfBounds(courtLines, vec) {
+    var distance = 0;
+    distanceToOutOfBounds = 1000;
+    var dx = 100;
+    var dy = 100;
+    courtLines.children.forEach(function (line) {
+        if (line.name !== "COURT_LINES_MID_MESH") {
+            if (line.name === "COURT_LINES_TOP_MESH" || line.name === "COURT_LINES_BOTTOM_MESH") {
+                dx = 0.5;
+                dy = vec.y - line.position.y;
+            } else if (line.name === "COURT_LINES_LEFT_MESH" || line.name === "COURT_LINES_RIGHT_MESH") {
+                dx = vec.x - line.position.x;
+                dy = 0.5;
+            }
 
-            return group;
-        } else {
-            return false;
+            distance = Math.sqrt(dx * dx + dy * dy);
+            mostCloseLine = distanceToOutOfBounds > distance ? line : mostCloseLine;
+            distanceToOutOfBounds = distanceToOutOfBounds > distance ? distance : distanceToOutOfBounds;
         }
-    }()
+    });
+    return distance;
+}
+
+function Test(scene) {
+    console.log("Testing Mode Enabled");
+    var velocity = new THREE.Vector3();
+    velocity.x = 120;
+
+    var Scene = scene;
+    //Ball Components
+    var mesh = (0, _BallMesh.BallMesh)();
+    mesh.name = "Ball";
+    //Components to the scene
+    Scene.add(mesh);
+    //Court
+    var court = new _Court.Court(Scene);
+    var courtLines = Scene.getObjectByName("COURT_LINES");
+
+    this.translate = function (x, y) {
+        if (!OUT_OF_BOUNDS) {
+            var vec = new THREE.Vector2(mesh.position.x + x, mesh.position.y + y);
+            //Loads the most close line to the ball using the next position of the ball
+            checkOutOfBounds(courtLines, vec);
+            if (distanceToOutOfBounds < REFLECTION_DISTANCE && distanceToOutOfBounds < REFLECTION_DISTANCE_GRACE) {
+                if (mostCloseLine.name === "COURT_LINES_LEFT_MESH" || mostCloseLine.name === "COURT_LINES_RIGHT_MESH") {
+                    x *= -1;
+                    velocity.x *= -1;
+                } else if (mostCloseLine.name === "COURT_LINES_TOP_MESH" || mostCloseLine.name === "COURT_LINES_BOTTOM_MESH") {
+                    y *= -1;
+                    velocity.y *= -1;
+                }
+            }
+        }
+        mesh.translateX(x);
+        mesh.translateY(y);
+    };
+
+    velocity.x = 100;
+    velocity.y = 100;
+    //velocity.x = 10;
+
+    //this.translate();
+
+    this.update = function (dt) {
+        this.translate(velocity.x * dt, velocity.y * dt);
+    };
 };
 
-exports.ObjectToShow = ObjectToShow;
+exports.Test = Test;
 
-},{"three":1}],8:[function(require,module,exports){
+},{"./Ball/BallMesh":4,"./environment/Court/Court":8,"three":1}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48205,7 +48263,7 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     teamTwoCourt.add(team_two_mesh);
 
     //LINES
-    var line_anchor = COURT_SIZE_HEIGHT * 0.03;
+    var line_anchor = 5;
     var auxHeightPos = COURT_SIZE_HEIGHT / 2 - 2.5;
     var auxWidthPos = court_team_size_width - 2.5;
     //TOP
@@ -48493,6 +48551,54 @@ function PrincipalScene() {
 exports.PrincipalScene = PrincipalScene;
 
 },{"./../assets/Ball/Ball":3,"./../assets/Player/Player":5,"./../assets/environment/Court/Court":8,"three":1}],13:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.TestScene = undefined;
+
+var _three = require('three');
+
+var _Test = require('./../assets/Test');
+
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
+function TestScene() {
+    var scene = new _three.Scene();
+    scene.background = new _three.Color("#000");
+    var aspectRatio = window.innerWidth / window.innerHeight;
+    var fieldOfView = 45;
+    var nearPlane = 1;
+    var farPlane = 500;
+    var cameraDistanceToPlayer = 250;
+    var Camera = new _three.PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
+    Camera.name = "Camera";
+    Camera.position.set(0, 0, cameraDistanceToPlayer);
+    Camera.lookAt(0, 0, 0);
+    scene.add(Camera);
+    //Need to declare the environment first cause the entities in it may be use some of the atts that court have
+    var test = new _Test.Test(scene);
+
+    //player.getMesh().position.set(-50,0,0);
+
+    this.getScene = function () {
+        return scene;
+    };
+    this.getCamera = function () {
+        return Camera;
+    };
+    var SceneSubjects = [test];
+
+    this.update = function (dt) {
+        //console.log("DT PrincipalScene" + dt);
+        for (var i = 0; i < SceneSubjects.length; i++) {
+            SceneSubjects[i].update(dt);
+        }
+    };
+};
+exports.TestScene = TestScene;
+
+},{"./../assets/Test":7,"three":1}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

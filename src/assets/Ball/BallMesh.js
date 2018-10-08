@@ -10,6 +10,7 @@ function BallMesh(){
     var ballMaterials = new Object3D();
 
     const ball_body_geometry = new CircleGeometry(ballSize, geometryTriangles);
+    ball_body_geometry.name = "CircleGeometry";
     const ball_body_material = new MeshBasicMaterial({ color: ballBodyColor });
     const ball_body_mesh = new Mesh(ball_body_geometry, ball_body_material);
     ballMaterials.add(ball_body_mesh);
