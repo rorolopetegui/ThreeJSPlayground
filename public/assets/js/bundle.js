@@ -47675,7 +47675,7 @@ var _PrincipalScene = require('./scenes/PrincipalScene');
 
 var _TestScene = require('./scenes/TestScene');
 
-var testEnabled = false; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var testEnabled = true; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 //import * as THREE from 'three';
 
 
@@ -48157,26 +48157,39 @@ function PlayerMesh() {
 exports.PlayerMesh = PlayerMesh;
 
 },{"three":1}],7:[function(require,module,exports){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-/*eslint no-unused-vars: ["error", { "args": "none" }]*/
-//import * as THREE from 'three';
+exports.Test = undefined;
+
+var _Player = require('./../assets/Player/Player');
+
+var _Ball = require('./../assets/Ball/Ball');
+
+var _Court = require('./../assets/environment/Court/Court');
+
 /*
     *TEST CLASS*
 */
 
 function Test(scene) {
     console.log("Testing Mode Enabled");
+    var court = new _Court.Court(scene);
+    var ball = new _Ball.Ball(scene);
+    var player = new _Player.Player(scene, scene.getObjectByName("Camera"), ball);
+
+    player.getMesh().position.set(-50, 0, 0);
 
     this.update = function (dt) {};
-};
+} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+
+;
 
 exports.Test = Test;
 
-},{}],8:[function(require,module,exports){
+},{"./../assets/Ball/Ball":3,"./../assets/Player/Player":5,"./../assets/environment/Court/Court":8}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48569,6 +48582,7 @@ function TestScene() {
     scene.add(Camera);
     //Need to declare the environment first cause the entities in it may be use some of the atts that court have
     var test = new _Test.Test(scene);
+    //Need to declare the environment first cause the entities in it may be use some of the atts that court have
 
     //player.getMesh().position.set(-50,0,0);
 

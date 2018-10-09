@@ -17,7 +17,7 @@ function TestScene() {
     scene.add(Camera);
     //Need to declare the environment first cause the entities in it may be use some of the atts that court have
     const test = new Test(scene);
-  
+    //Need to declare the environment first cause the entities in it may be use some of the atts that court have
     
     //player.getMesh().position.set(-50,0,0);
 
