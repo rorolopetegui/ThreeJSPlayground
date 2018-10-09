@@ -4,6 +4,9 @@ function PlayerController(player, sCamera) {
     var Camera = sCamera;
     var onKeyDown = function (event) {
         switch (event.keyCode) {
+            case 32: //Space //Dash
+                Player.makeDash(true);
+                break;
             case 38: // up
             case 87: // w
                 Player.moveUp(true);
@@ -23,7 +26,11 @@ function PlayerController(player, sCamera) {
         }
     };
     var onKeyUp = function (event) {
+        console.log(event.keyCode);
         switch (event.keyCode) {
+            case 32: //Space //Dash
+                Player.makeDash(false);
+                break;
             case 38: // up
             case 87: // w
                 Player.moveUp(false);
@@ -64,7 +71,7 @@ function PlayerController(player, sCamera) {
         pos.x -= Player.getMesh().position.x;
         pos.y -= Player.getMesh().position.y;
         Player.onMouseUp(pos.x, pos.y);
-        
+
 
     };
 

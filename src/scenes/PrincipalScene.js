@@ -22,7 +22,7 @@ function PrincipalScene() {
     const ball = new Ball(scene);
     const player = new Player(scene, Camera, ball);
     
-    //player.getMesh().position.set(-50,0,0);
+    player.getMesh().position.set(-50,0,0);
 
     this.getScene = function () {
         return scene;

@@ -1,11 +1,12 @@
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-import { Vector2 } from 'three';
+import { Vector2, Vector3 } from 'three';
 import { BallMesh } from './BallMesh';
 
 const FRICTION = 1;
-const STOP_FRICTION_VEL = 5;
+const STOP_FRICTION_VEL = 3;
 const OUT_OF_BOUNDS = false;
-const REFLECTION_DISTANCE = 10;
+const REFLECTION_DISTANCE = 7.5;
+const REFLECTION_DISTANCE_GRACE = 8.5
 
 var distanceToOutOfBounds;
 var mostCloseLine;
@@ -93,18 +94,15 @@ function Ball(scene) {
     this.update = function (dt) {
         //Ball movement
         if (velocity.x != 0) {
-            if ((velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL) || (velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL)) {
-                stopMovement = true;
-            } else {
-                velocity.x -= velocity.x * FRICTION * dt;
-            }
+            velocity.x -= velocity.x * FRICTION * dt;
         }
         if (velocity.y != 0) {
-            if ((velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL) || (velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL)) {
+            velocity.y -= velocity.y * FRICTION * dt;
+        }
+        //If this isn't here, it will never stop
+        if ((velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL) || (velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL)) {
+            if ((velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL) || (velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL))
                 stopMovement = true;
-            } else {
-                velocity.y -= velocity.y * FRICTION * dt;
-            }
         }
 
         if (stopMovement) {
@@ -116,8 +114,6 @@ function Ball(scene) {
         if (velocity.x != 0 || velocity.y != 0) {
             this.translate(velocity.x * dt, velocity.y * dt);
         }
-
-
     };
 };
 
