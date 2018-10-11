@@ -7,6 +7,7 @@ const STOP_FRICTION_VEL = 3;
 const OUT_OF_BOUNDS = false;
 const REFLECTION_DISTANCE = 7.5;
 const REFLECTION_DISTANCE_GRACE = 8.5
+const VELOCITY_RESET_TEAM = 10;
 
 var distanceToOutOfBounds;
 var mostCloseLine;
@@ -35,12 +36,14 @@ function checkOutOfBounds(courtLines, vec) {
 }
 
 function Ball(scene) {
+    //Ball atts
+    this.teamShootMe = 0;
     //Helpers
     //Save Scene in case that needed
     var Scene = scene;
     var courtLines = Scene.getObjectByName("COURT_LINES");
     mostCloseLine = courtLines.getObjectByName("COURT_LINES_TOP_MESH");
-    //Ball atts
+    //Ball vars
     var velocity = new Vector3();
     var direction = new Vector3();
     var forceImpulse = 0;
@@ -51,13 +54,14 @@ function Ball(scene) {
     //Components to the scene
     Scene.add(mesh);
     //setters
-    this.shootBall = function (x, y, force) {
+    this.shootBall = function (x, y, force, teamShooted) {
         direction.x = x;
         direction.y = y;
         direction.normalize();
         forceImpulse = force;
         velocity.y += direction.y * forceImpulse;
         velocity.x += direction.x * forceImpulse;
+        this.teamShootMe = teamShooted;
     };
     //Getters
     this.getMesh = function () {
@@ -65,6 +69,9 @@ function Ball(scene) {
     };
     this.getMaterials = function () {
         return mesh.children[0];
+    };
+    this.teamShooted = function () {
+        return this.teamShootMe;
     };
     //Controls
     this.translate = function (x, y) {
@@ -104,7 +111,14 @@ function Ball(scene) {
             if ((velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL) || (velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL))
                 stopMovement = true;
         }
-
+        //If it's too slow the movement of the ball, it cant hit no one
+        if ((velocity.x != 0 || velocity.y != 0) && !stopMovement) {
+            if (velocity.x <= VELOCITY_RESET_TEAM && velocity.x >= -VELOCITY_RESET_TEAM) {
+                if (velocity.y <= VELOCITY_RESET_TEAM && velocity.y >= -VELOCITY_RESET_TEAM) {
+                    this.teamShootMe = 0;
+                }
+            }
+        }
         if (stopMovement) {
             velocity.x = 0;
             velocity.y = 0;

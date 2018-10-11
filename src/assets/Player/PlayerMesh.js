@@ -3,8 +3,9 @@ import { Mesh, CircleGeometry, MeshBasicMaterial, Object3D } from 'three';
 const PLAYER_SIZE = 6.5;
 const PLAYER_GEOMETRY_TRIANGLES = 32;
 const PLAYER_BODY_COLOR = 0xffff00;
+const BOT_BODY_COLOR = 0xB4EEB4;
 
-function PlayerMesh() {
+function PlayerMesh(isPlayer) {
     //Atts
 
     /*const indicatorSize = 1;
@@ -18,7 +19,9 @@ function PlayerMesh() {
     //var player_geometry = new Geometry();
 
     const player_body_geometry = new CircleGeometry(PLAYER_SIZE, PLAYER_GEOMETRY_TRIANGLES);
-    const player_body_material = new MeshBasicMaterial({ color: PLAYER_BODY_COLOR });
+    var player_body_material = new MeshBasicMaterial({ color: PLAYER_BODY_COLOR });
+    if (!isPlayer)
+        player_body_material = new MeshBasicMaterial({ color: BOT_BODY_COLOR });
     const player_body_mesh = new Mesh(player_body_geometry, player_body_material);
     playerMaterials.add(player_body_mesh);
     /*player_body_mesh.updateMatrix();
@@ -31,7 +34,7 @@ function PlayerMesh() {
     player_indicator_mesh.position.set(0, 3, 0);
     playerMaterials.add(player_indicator_mesh);*/
     player.add(playerMaterials);
-    
+
     player.position.set(0, 0, 0.1);
     //player_indicator_mesh.updateMatrix();
     //player_geometry.merge(player_indicator_mesh.geometry, player_indicator_mesh.matrix, 1);

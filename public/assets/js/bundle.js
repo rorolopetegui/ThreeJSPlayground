@@ -47675,7 +47675,7 @@ var _PrincipalScene = require('./scenes/PrincipalScene');
 
 var _TestScene = require('./scenes/TestScene');
 
-var testEnabled = true; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var testEnabled = false; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 //import * as THREE from 'three';
 
 
@@ -47735,6 +47735,7 @@ var STOP_FRICTION_VEL = 3;
 var OUT_OF_BOUNDS = false;
 var REFLECTION_DISTANCE = 7.5;
 var REFLECTION_DISTANCE_GRACE = 8.5;
+var VELOCITY_RESET_TEAM = 10;
 
 var distanceToOutOfBounds;
 var mostCloseLine;
@@ -47763,12 +47764,14 @@ function checkOutOfBounds(courtLines, vec) {
 }
 
 function Ball(scene) {
+    //Ball atts
+    this.teamShootMe = 0;
     //Helpers
     //Save Scene in case that needed
     var Scene = scene;
     var courtLines = Scene.getObjectByName("COURT_LINES");
     mostCloseLine = courtLines.getObjectByName("COURT_LINES_TOP_MESH");
-    //Ball atts
+    //Ball vars
     var velocity = new _three.Vector3();
     var direction = new _three.Vector3();
     var forceImpulse = 0;
@@ -47779,13 +47782,14 @@ function Ball(scene) {
     //Components to the scene
     Scene.add(mesh);
     //setters
-    this.shootBall = function (x, y, force) {
+    this.shootBall = function (x, y, force, teamShooted) {
         direction.x = x;
         direction.y = y;
         direction.normalize();
         forceImpulse = force;
         velocity.y += direction.y * forceImpulse;
         velocity.x += direction.x * forceImpulse;
+        this.teamShootMe = teamShooted;
     };
     //Getters
     this.getMesh = function () {
@@ -47793,6 +47797,9 @@ function Ball(scene) {
     };
     this.getMaterials = function () {
         return mesh.children[0];
+    };
+    this.teamShooted = function () {
+        return this.teamShootMe;
     };
     //Controls
     this.translate = function (x, y) {
@@ -47830,7 +47837,14 @@ function Ball(scene) {
         if (velocity.x > 0 && velocity.x <= STOP_FRICTION_VEL || velocity.x < 0 && velocity.x >= -STOP_FRICTION_VEL) {
             if (velocity.y > 0 && velocity.y <= STOP_FRICTION_VEL || velocity.y < 0 && velocity.y >= -STOP_FRICTION_VEL) stopMovement = true;
         }
-
+        //If it's too slow the movement of the ball, it cant hit no one
+        if ((velocity.x != 0 || velocity.y != 0) && !stopMovement) {
+            if (velocity.x <= VELOCITY_RESET_TEAM && velocity.x >= -VELOCITY_RESET_TEAM) {
+                if (velocity.y <= VELOCITY_RESET_TEAM && velocity.y >= -VELOCITY_RESET_TEAM) {
+                    this.teamShootMe = 0;
+                }
+            }
+        }
         if (stopMovement) {
             velocity.x = 0;
             velocity.y = 0;
@@ -47893,12 +47907,15 @@ var _PlayerController = require('../../scripts/PlayerController');
 var _PlayerMesh = require('./PlayerMesh');
 
 //Game Constants
-var OUT_OF_BOUNDS = false; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var DISTANCE_BALL_TO_PLAYER = 10; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 
+var OUT_OF_BOUNDS = false;
 var SHOOT_MAX_TIME = 0.86;
 var SHOOT_MAX_FORCE = 600;
 var SHOOT_MIN_FORCE = 5;
 var ACCELERATION = 800;
+var BALL_CATCH_DISTANCE = 285;
+var BALL_HIT_DISTANCE = 110;
 //DASH PROPS
 var DASH_VELOCITY = 300;
 var DASH_COOLDOWN = 0.5;
@@ -47924,7 +47941,21 @@ function checkDistanceToLine(line, vec) {
     return distance;
 }
 
-function Player(scene, Camera, ball) {
+function moveBallToFront(player, ball, team) {
+    var x = player.position.x;
+    var y = player.position.y;
+    if (team === 0) {
+        ball.position.set(x - DISTANCE_BALL_TO_PLAYER, y, 0.5);
+    } else {
+        ball.position.set(x + DISTANCE_BALL_TO_PLAYER, y, 0.5);
+    }
+}
+function Player(Id, scene, Camera, ball, isPlayer) {
+    //Atts
+    this.ID = Id;
+    this.isPlayer = isPlayer;
+    this.team = 0;
+
     //Save Scene in case that needed
     var Scene = scene;
     var courtLines = Scene.getObjectByName("COURT_LINES");
@@ -47933,7 +47964,7 @@ function Player(scene, Camera, ball) {
     //Controls that needs to be constantly checked
     var distanceToBall;
     var gotBall = false;
-    //Player Attributes 
+    //Player vars 
     var moveUp = false;
     var moveDown = false;
     var moveRight = false;
@@ -47949,12 +47980,11 @@ function Player(scene, Camera, ball) {
 
     //Player Attributes 
     //Player Components
-    var mesh = (0, _PlayerMesh.PlayerMesh)();
-    mesh.name = "Player";
+    var mesh = (0, _PlayerMesh.PlayerMesh)(isPlayer);
+    if (isPlayer) mesh.name = "Player";else mesh.name = "Bot";
     //Components to the scene
     Scene.add(mesh);
-
-    (0, _PlayerController.PlayerController)(this, Camera);
+    if (isPlayer) (0, _PlayerController.PlayerController)(this, Camera);
 
     //Controls
     this.onMouseDown = function () {
@@ -47967,15 +47997,15 @@ function Player(scene, Camera, ball) {
             //Performs shoot
             shootForce = shootingCounter * SHOOT_MAX_FORCE / SHOOT_MAX_TIME;
             shootForce = shootForce >= SHOOT_MIN_FORCE ? shootForce : SHOOT_MIN_FORCE;
-            //console.log("SHOOTING FORCE: " + shootForce);
-            gameBall.shootBall(mouseX, mouseY, shootForce);
+            gameBall.shootBall(mouseX, mouseY, shootForce, this.team);
             //Reset control vars
             isShooting = false;
             gotBall = false;
             shootingCounter = 0;
         } else {
-            if (distanceToBall < 100) {
+            if (distanceToBall < BALL_CATCH_DISTANCE) {
                 gameBall.stopMovement();
+                moveBallToFront(mesh, gameBall.getMesh(), this.team);
                 gotBall = true;
             }
         }
@@ -47997,7 +48027,7 @@ function Player(scene, Camera, ball) {
     };
     this.translate = function (x, y) {
         //Performs checks if the player can move in that direction
-        if (!OUT_OF_BOUNDS) {
+        if (!OUT_OF_BOUNDS && isPlayer) {
             var vec = new _three.Vector2(mesh.position.x + x, mesh.position.y + y);
             if (x > 0) {
                 if (checkDistanceToLine(courtLines.getObjectByName("COURT_LINES_RIGHT_MESH"), vec) <= DISTANCE_TO_OUT_OF_BOUNDS) {
@@ -48047,6 +48077,18 @@ function Player(scene, Camera, ball) {
     };
 
     this.update = function (dt) {
+        if (!isPlayer) {
+            //TEST FOR BOTS
+            distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
+            if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
+                console.log("BOT HAVE BEEN HITTED");
+                scene.remove(mesh);
+            }
+            //TEST FOR BOTS
+
+            return;
+        }
+
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
@@ -48055,6 +48097,7 @@ function Player(scene, Camera, ball) {
         }
 
         distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
+        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) console.log("YOU HAVE BEEN HITTED");
         //Player movement
         if (velocity.x != 0) {
             if (velocity.x > 0 && velocity.x <= 0.1 || velocity.x < 0 && velocity.x >= -0.1) velocity.x = 0;else velocity.x -= velocity.x * FRICTION * dt;
@@ -48093,8 +48136,6 @@ function Player(scene, Camera, ball) {
             }
             this.translate(velocity.x * dt, velocity.y * dt);
         }
-
-        //console.log("Dt Player: " + dt);
     };
 };
 
@@ -48113,8 +48154,9 @@ var _three = require("three");
 var PLAYER_SIZE = 6.5;
 var PLAYER_GEOMETRY_TRIANGLES = 32;
 var PLAYER_BODY_COLOR = 0xffff00;
+var BOT_BODY_COLOR = 0xB4EEB4;
 
-function PlayerMesh() {
+function PlayerMesh(isPlayer) {
     //Atts
 
     /*const indicatorSize = 1;
@@ -48129,6 +48171,7 @@ function PlayerMesh() {
 
     var player_body_geometry = new _three.CircleGeometry(PLAYER_SIZE, PLAYER_GEOMETRY_TRIANGLES);
     var player_body_material = new _three.MeshBasicMaterial({ color: PLAYER_BODY_COLOR });
+    if (!isPlayer) player_body_material = new _three.MeshBasicMaterial({ color: BOT_BODY_COLOR });
     var player_body_mesh = new _three.Mesh(player_body_geometry, player_body_material);
     playerMaterials.add(player_body_mesh);
     /*player_body_mesh.updateMatrix();
@@ -48157,39 +48200,34 @@ function PlayerMesh() {
 exports.PlayerMesh = PlayerMesh;
 
 },{"three":1}],7:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.Test = undefined;
+/*eslint no-unused-vars: ["error", { "args": "none" }]*/
 
-var _Player = require('./../assets/Player/Player');
-
-var _Ball = require('./../assets/Ball/Ball');
-
-var _Court = require('./../assets/environment/Court/Court');
-
+//import { Player } from './../assets/Player/Player';
+//import { Ball } from './../assets/Ball/Ball';
+//import { Court } from './../assets/environment/Court/Court';
 /*
     *TEST CLASS*
 */
 
 function Test(scene) {
     console.log("Testing Mode Enabled");
-    var court = new _Court.Court(scene);
-    var ball = new _Ball.Ball(scene);
-    var player = new _Player.Player(scene, scene.getObjectByName("Camera"), ball);
-
-    player.getMesh().position.set(-50, 0, 0);
+    /*const court = new Court(scene);
+    const ball = new Ball(scene);
+    const player = new Player(scene, scene.getObjectByName("Camera"), ball);
+      player.getMesh().position.set(-50, 0, 0);
+    */
 
     this.update = function (dt) {};
-} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-
-;
+};
 
 exports.Test = Test;
 
-},{"./../assets/Ball/Ball":3,"./../assets/Player/Player":5,"./../assets/environment/Court/Court":8}],8:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48204,8 +48242,8 @@ var COURT_SIZE_WIDTH = 280; /*eslint no-unused-vars: ["error", { "args": "none" 
 var COURT_SIZE_HEIGHT = 180;
 
 function Court(scene) {
-
     //Court Attributes 
+    this.manyteams = 2;
     //Court Components
     var mesh = (0, _CourtMesh.CourtMesh)(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT);
     mesh.name = "Court";
@@ -48215,6 +48253,12 @@ function Court(scene) {
     //Getters
     this.getCourtLines = function () {
         return mesh.getObjectByName("COURT_LINES");
+    };
+    this.getTeamOne = function () {
+        return mesh.getObjectByName("COURT_TEAM_ONE_FLOOR");
+    };
+    this.getTeamTwo = function () {
+        return mesh.getObjectByName("COURT_TEAM_TWO_FLOOR");
     };
 
     this.update = function (dt) {
@@ -48241,6 +48285,7 @@ var COURT_LINES_COLOR = 0x2B2F37;
 function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     var court_team_size_height = COURT_SIZE_HEIGHT;
     var court_team_size_width = COURT_SIZE_WIDTH / 2;
+
     //Wrapper
     var Court = new _three.Object3D();
     var teamOneCourt = new _three.Object3D();
@@ -48255,16 +48300,16 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     var team_one_material = new _three.MeshBasicMaterial({ color: COURT_TEAM_ONE_COLOR });
     var team_one_mesh = new _three.Mesh(team_one_geometry, team_one_material);
     team_one_mesh.name = "TEAM_ONE_FLOOR_MESH";
-    team_one_mesh.position.set(court_team_size_width / 2, 0, -1);
     teamOneCourt.add(team_one_mesh);
+    teamOneCourt.position.set(court_team_size_width / 2, 0, -1);
 
     //Team2
     var team_two_geometry = new _three.PlaneBufferGeometry(court_team_size_width, court_team_size_height);
     var team_two_material = new _three.MeshBasicMaterial({ color: COURT_TEAM_TWO_COLOR });
     var team_two_mesh = new _three.Mesh(team_two_geometry, team_two_material);
     team_one_mesh.name = "TEAM_TWO_FLOOR_MESH";
-    team_two_mesh.position.set(-court_team_size_width / 2, 0, -1);
     teamTwoCourt.add(team_two_mesh);
+    teamTwoCourt.position.set(-court_team_size_width / 2, 0, -1);
 
     //LINES
     var line_anchor = 5;
@@ -48306,6 +48351,7 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     Court.add(teamOneCourt);
     Court.add(teamTwoCourt);
     Court.add(courtLines);
+
     //Setting position to the scene
     Court.position.set(0, 0, -1);
 
@@ -48517,25 +48563,115 @@ var _Ball = require('./../assets/Ball/Ball');
 var _Court = require('./../assets/environment/Court/Court');
 
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var FIELD_OF_VIEW = 45;
+var NEAR_PLANE = 1;
+var FAR_PLANE = 500;
+var CAM_DISTANCE_TO_PLAYER = 250;
+var DISTANCE_SPAWN_PLAYERS = 25;
+
+var playersTeam1 = 0;
+var playersTeam2 = 0;
+
+var PlayerIdNext = 0;
+
+function assignTeam(player, court, scene) {
+    var assignedTeam;
+    //TEST
+    /*assignedTeam = 0;
+    player.team = assignedTeam;
+    playersTeam1++;*/
+    //TEST
+    if (playersTeam1 === playersTeam2) {
+        assignedTeam = Math.round(Math.random());
+        assignedTeam++;
+        player.team = assignedTeam;
+        if (assignedTeam === 1) playersTeam1++;else playersTeam2++;
+    } else {
+        if (playersTeam1 < playersTeam2) {
+            player.team = 1;
+            playersTeam1++;
+        } else {
+            player.team = 2;
+            playersTeam2++;
+        }
+    }
+    assignPosition(player, court, scene);
+};
+function assignPosition(player, court, scene) {
+    //console.log("player.name: " + player.team);
+    var quantityPlayers = 0;
+    var x = 0;
+    var y = 0;
+    //Team 1
+    if (player.team === 1) {
+        var courtTeamOne = court.getTeamOne();
+        quantityPlayers = playersTeam1;
+        x = courtTeamOne.position.x;
+        y = courtTeamOne.position.y;
+    } else {
+        //Team 2
+        var courtTeamTwo = court.getTeamTwo();
+        quantityPlayers = playersTeam2;
+        x = courtTeamTwo.position.x;
+        y = courtTeamTwo.position.y;
+    }
+    switch (quantityPlayers) {
+        case 1:
+            player.getMesh().position.set(x, y, 0);
+            break;
+        case 2:
+            player.getMesh().position.set(x + DISTANCE_SPAWN_PLAYERS, y, 0);
+            break;
+        case 3:
+            player.getMesh().position.set(x, y - DISTANCE_SPAWN_PLAYERS, 0);
+            break;
+        case 4:
+            player.getMesh().position.set(x - DISTANCE_SPAWN_PLAYERS, y, 0);
+            break;
+        case 5:
+            player.getMesh().position.set(x, y + DISTANCE_SPAWN_PLAYERS, 0);
+            break;
+        default:
+            player.getMesh().position.set(0, 0, 0);
+            break;
+    }
+};
+
+var aspectRatio = window.innerWidth / window.innerHeight;
 function PrincipalScene() {
     var scene = new _three.Scene();
     scene.background = new _three.Color("#000");
-    var aspectRatio = window.innerWidth / window.innerHeight;
-    var fieldOfView = 45;
-    var nearPlane = 1;
-    var farPlane = 500;
-    var cameraDistanceToPlayer = 250;
-    var Camera = new _three.PerspectiveCamera(fieldOfView, aspectRatio, nearPlane, farPlane);
+    var Camera = new _three.PerspectiveCamera(FIELD_OF_VIEW, aspectRatio, NEAR_PLANE, FAR_PLANE);
     Camera.name = "Camera";
-    Camera.position.set(0, 0, cameraDistanceToPlayer);
+    Camera.position.set(0, 0, CAM_DISTANCE_TO_PLAYER);
     Camera.lookAt(0, 0, 0);
     scene.add(Camera);
     //Need to declare the environment first cause the entities in it may be use some of the atts that court have
     var court = new _Court.Court(scene);
     var ball = new _Ball.Ball(scene);
-    var player = new _Player.Player(scene, Camera, ball);
+    var SceneSubjects = [court, ball];
+    var Players = [];
 
-    player.getMesh().position.set(-50, 0, 0);
+    //Load players
+    var player = new _Player.Player(PlayerIdNext, scene, Camera, ball, true);
+    PlayerIdNext++;
+    Players.push(player);
+    //Some bots
+    Players.push(new _Player.Player(PlayerIdNext, scene, Camera, ball, false));
+    PlayerIdNext++;
+    Players.push(new _Player.Player(PlayerIdNext, scene, Camera, ball, false));
+    PlayerIdNext++;
+    Players.push(new _Player.Player(PlayerIdNext, scene, Camera, ball, false));
+    PlayerIdNext++;
+    Players.push(new _Player.Player(PlayerIdNext, scene, Camera, ball, false));
+    PlayerIdNext++;
+    Players.push(new _Player.Player(PlayerIdNext, scene, Camera, ball, false));
+    PlayerIdNext++;
+    //Assing team and position to each player 
+    for (var i = 0; i < Players.length; i++) {
+        assignTeam(Players[i], court, scene);
+        SceneSubjects.push(Players[i]);
+    }
 
     this.getScene = function () {
         return scene;
@@ -48543,12 +48679,11 @@ function PrincipalScene() {
     this.getCamera = function () {
         return Camera;
     };
-    var SceneSubjects = [court, player, ball];
 
     this.update = function (dt) {
         //console.log("DT PrincipalScene" + dt);
-        for (var i = 0; i < SceneSubjects.length; i++) {
-            SceneSubjects[i].update(dt);
+        for (var _i = 0; _i < SceneSubjects.length; _i++) {
+            SceneSubjects[_i].update(dt);
         }
     };
 };
@@ -48645,7 +48780,6 @@ function PlayerController(player, sCamera) {
         }
     };
     var onKeyUp = function onKeyUp(event) {
-        console.log(event.keyCode);
         switch (event.keyCode) {
             case 32:
                 //Space //Dash

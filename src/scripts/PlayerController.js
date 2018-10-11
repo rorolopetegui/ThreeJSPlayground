@@ -26,7 +26,6 @@ function PlayerController(player, sCamera) {
         }
     };
     var onKeyUp = function (event) {
-        console.log(event.keyCode);
         switch (event.keyCode) {
             case 32: //Space //Dash
                 Player.makeDash(false);

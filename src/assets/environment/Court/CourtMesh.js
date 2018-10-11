@@ -8,6 +8,7 @@ const COURT_LINES_COLOR = 0x2B2F37;
 function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     const court_team_size_height = COURT_SIZE_HEIGHT;
     const court_team_size_width = COURT_SIZE_WIDTH / 2;
+    
     //Wrapper
     var Court = new Object3D();
     var teamOneCourt = new Object3D();
@@ -22,16 +23,16 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     const team_one_material = new MeshBasicMaterial({ color: COURT_TEAM_ONE_COLOR });
     const team_one_mesh = new Mesh(team_one_geometry, team_one_material);
     team_one_mesh.name = "TEAM_ONE_FLOOR_MESH";
-    team_one_mesh.position.set(court_team_size_width / 2, 0, -1);
     teamOneCourt.add(team_one_mesh);
+    teamOneCourt.position.set(court_team_size_width / 2, 0, -1);
 
     //Team2
     const team_two_geometry = new PlaneBufferGeometry(court_team_size_width, court_team_size_height);
     const team_two_material = new MeshBasicMaterial({ color: COURT_TEAM_TWO_COLOR });
     const team_two_mesh = new Mesh(team_two_geometry, team_two_material);
     team_one_mesh.name = "TEAM_TWO_FLOOR_MESH";
-    team_two_mesh.position.set(-court_team_size_width / 2, 0, -1);
     teamTwoCourt.add(team_two_mesh);
+    teamTwoCourt.position.set(-court_team_size_width / 2, 0, -1);
 
 
     //LINES
@@ -75,6 +76,8 @@ function CourtMesh(COURT_SIZE_WIDTH, COURT_SIZE_HEIGHT) {
     Court.add(teamOneCourt);
     Court.add(teamTwoCourt);
     Court.add(courtLines);
+
+
     //Setting position to the scene
     Court.position.set(0, 0, -1);
 

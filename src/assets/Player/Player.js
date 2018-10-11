@@ -4,11 +4,14 @@ import { PlayerController } from '../../scripts/PlayerController';
 import { PlayerMesh } from './PlayerMesh';
 
 //Game Constants
+const DISTANCE_BALL_TO_PLAYER = 10;
 const OUT_OF_BOUNDS = false;
 const SHOOT_MAX_TIME = 0.86;
 const SHOOT_MAX_FORCE = 600;
 const SHOOT_MIN_FORCE = 5;
 const ACCELERATION = 800;
+const BALL_CATCH_DISTANCE = 285;
+const BALL_HIT_DISTANCE = 110;
 //DASH PROPS
 const DASH_VELOCITY = 300;
 const DASH_COOLDOWN = 0.5;
@@ -34,7 +37,21 @@ function checkDistanceToLine(line, vec) {
     return distance;
 }
 
-function Player(scene, Camera, ball) {
+function moveBallToFront(player, ball, team) {
+    var x = player.position.x;
+    var y = player.position.y;
+    if (team === 0) {
+        ball.position.set(x - DISTANCE_BALL_TO_PLAYER, y, 0.5);
+    } else {
+        ball.position.set(x + DISTANCE_BALL_TO_PLAYER, y, 0.5);
+    }
+}
+function Player(Id, scene, Camera, ball, isPlayer) {
+    //Atts
+    this.ID = Id;
+    this.isPlayer = isPlayer;
+    this.team = 0;
+
     //Save Scene in case that needed
     var Scene = scene;
     var courtLines = Scene.getObjectByName("COURT_LINES");
@@ -43,7 +60,7 @@ function Player(scene, Camera, ball) {
     //Controls that needs to be constantly checked
     var distanceToBall;
     var gotBall = false;
-    //Player Attributes 
+    //Player vars 
     var moveUp = false;
     var moveDown = false;
     var moveRight = false;
@@ -59,12 +76,15 @@ function Player(scene, Camera, ball) {
 
     //Player Attributes 
     //Player Components
-    const mesh = PlayerMesh();
-    mesh.name = "Player";
+    const mesh = PlayerMesh(isPlayer);
+    if (isPlayer)
+        mesh.name = "Player";
+    else
+        mesh.name = "Bot";
     //Components to the scene
     Scene.add(mesh);
-
-    PlayerController(this, Camera);
+    if (isPlayer)
+        PlayerController(this, Camera);
 
     //Controls
     this.onMouseDown = function () {
@@ -77,15 +97,15 @@ function Player(scene, Camera, ball) {
             //Performs shoot
             shootForce = (shootingCounter * SHOOT_MAX_FORCE) / SHOOT_MAX_TIME;
             shootForce = shootForce >= SHOOT_MIN_FORCE ? shootForce : SHOOT_MIN_FORCE;
-            //console.log("SHOOTING FORCE: " + shootForce);
-            gameBall.shootBall(mouseX, mouseY, shootForce);
+            gameBall.shootBall(mouseX, mouseY, shootForce, this.team);
             //Reset control vars
             isShooting = false;
             gotBall = false;
             shootingCounter = 0;
         } else {
-            if (distanceToBall < 100) {
+            if (distanceToBall < BALL_CATCH_DISTANCE) {
                 gameBall.stopMovement();
+                moveBallToFront(mesh, gameBall.getMesh(), this.team);
                 gotBall = true;
             }
         }
@@ -108,7 +128,7 @@ function Player(scene, Camera, ball) {
     };
     this.translate = function (x, y) {
         //Performs checks if the player can move in that direction
-        if (!OUT_OF_BOUNDS) {
+        if (!OUT_OF_BOUNDS && isPlayer) {
             var vec = new Vector2((mesh.position.x + x), (mesh.position.y + y));
             if (x > 0) {
                 if (checkDistanceToLine(courtLines.getObjectByName("COURT_LINES_RIGHT_MESH"), vec) <= DISTANCE_TO_OUT_OF_BOUNDS) {
@@ -160,6 +180,18 @@ function Player(scene, Camera, ball) {
     };
 
     this.update = function (dt) {
+        if (!isPlayer) {
+            //TEST FOR BOTS
+            distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
+            if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team){
+                console.log("BOT HAVE BEEN HITTED");
+                scene.remove(mesh);
+            }  
+            //TEST FOR BOTS
+
+            return;
+        }
+
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
@@ -168,6 +200,8 @@ function Player(scene, Camera, ball) {
         }
 
         distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
+        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team)
+            console.log("YOU HAVE BEEN HITTED");
         //Player movement
         if (velocity.x != 0) {
             if ((velocity.x > 0 && velocity.x <= 0.1) || (velocity.x < 0 && velocity.x >= -0.1))
@@ -207,12 +241,10 @@ function Player(scene, Camera, ball) {
                 isDashing = false;
                 dashActive = false;
                 makeDash = false;
-                setTimeout(function(){ dashActive = true; }, (DASH_COOLDOWN * 1000));
+                setTimeout(function () { dashActive = true; }, (DASH_COOLDOWN * 1000));
             }
             this.translate(velocity.x * dt, velocity.y * dt);
         }
-
-        //console.log("Dt Player: " + dt);
     };
 };
 
