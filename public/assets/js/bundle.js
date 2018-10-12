@@ -47825,6 +47825,30 @@ function Ball(scene) {
         stopMovement = true;
     };
 
+    //TEST
+    var testBall = false;
+    var minVel = 10;
+    var MAX = 550;
+    var MIN = 300;
+    var interval = 500;
+    var plusOrMinus;
+    if (testBall) {
+        setInterval(function () {
+
+            if (velocity.x <= minVel) {
+                this.teamShootMe = 1;
+                plusOrMinus = Math.random() < 0.5 ? -1 : 1;
+                velocity.x = Math.round(Math.random() * (MAX - MIN) + MIN) * plusOrMinus;
+            }
+
+            if (velocity.y <= minVel) {
+                this.teamShootMe = 1;
+                plusOrMinus = Math.random() < 0.5 ? -1 : 1;
+                velocity.y = Math.round(Math.random() * (MAX - MIN) + MIN) * plusOrMinus;
+            }
+        }, interval);
+    }
+    //TEST
     this.update = function (dt) {
         //Ball movement
         if (velocity.x != 0) {
@@ -47916,9 +47940,13 @@ var SHOOT_MIN_FORCE = 5;
 var ACCELERATION = 800;
 var BALL_CATCH_DISTANCE = 285;
 var BALL_HIT_DISTANCE = 110;
+var BALL_HIT_FAIRNESS = 150;
+//HIT PROPS
+var HITTED_DEBUFF = 0.5;
+var HITTED_COOLDOWN = 8.35;
 //DASH PROPS
 var DASH_VELOCITY = 300;
-var DASH_COOLDOWN = 0.5;
+var DASH_COOLDOWN = 3.77;
 
 var FRICTION = 10;
 var DISTANCE_TO_OUT_OF_BOUNDS = 9;
@@ -47964,7 +47992,7 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     //Controls that needs to be constantly checked
     var distanceToBall;
     var gotBall = false;
-    //Player vars 
+    //Control vars 
     var moveUp = false;
     var moveDown = false;
     var moveRight = false;
@@ -47977,6 +48005,10 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     var shootForce = 0;
     var dashActive = true;
     var isDashing = false;
+    var isHitted = false;
+    var hitDebuff = 1;
+    var isDead = false;
+    var canBeHitted = true;
 
     //Player Attributes 
     //Player Components
@@ -48077,15 +48109,29 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     };
 
     this.update = function (dt) {
+        if (isDead) return;
         if (!isPlayer) {
             //TEST FOR BOTS
             distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
+            if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted) canBeHitted = true;
             if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
-                console.log("BOT HAVE BEEN HITTED");
-                scene.remove(mesh);
+                if (canBeHitted) {
+                    canBeHitted = false;
+                    if (isHitted) {
+                        isDead = true;
+                        scene.remove(mesh);
+                        return;
+                    }
+                    isHitted = true;
+                }
             }
             //TEST FOR BOTS
-
+            if (isHitted && hitDebuff !== HITTED_DEBUFF) {
+                hitDebuff = HITTED_DEBUFF;
+                setTimeout(function () {
+                    hitDebuff = 1;isHitted = false;
+                }, HITTED_COOLDOWN * 1000);
+            }
             return;
         }
 
@@ -48097,7 +48143,19 @@ function Player(Id, scene, Camera, ball, isPlayer) {
         }
 
         distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
-        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) console.log("YOU HAVE BEEN HITTED");
+        if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted) canBeHitted = true;
+        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
+            if (canBeHitted) {
+                canBeHitted = false;
+                if (isHitted) {
+                    isDead = true;
+                    scene.remove(mesh);
+                    return;
+                }
+                isHitted = true;
+            }
+        }
+
         //Player movement
         if (velocity.x != 0) {
             if (velocity.x > 0 && velocity.x <= 0.1 || velocity.x < 0 && velocity.x >= -0.1) velocity.x = 0;else velocity.x -= velocity.x * FRICTION * dt;
@@ -48125,6 +48183,12 @@ function Player(Id, scene, Camera, ball, isPlayer) {
                 isDashing = true;
             }
         }
+        if (isHitted && hitDebuff !== HITTED_DEBUFF) {
+            hitDebuff = HITTED_DEBUFF;
+            setTimeout(function () {
+                hitDebuff = 1;isHitted = false;
+            }, HITTED_COOLDOWN * 1000);
+        }
         if (velocity.x != 0 || velocity.y != 0) {
             if (isDashing) {
                 isDashing = false;
@@ -48134,7 +48198,7 @@ function Player(Id, scene, Camera, ball, isPlayer) {
                     dashActive = true;
                 }, DASH_COOLDOWN * 1000);
             }
-            this.translate(velocity.x * dt, velocity.y * dt);
+            this.translate(velocity.x * dt * hitDebuff, velocity.y * dt * hitDebuff);
         }
     };
 };
@@ -48576,11 +48640,6 @@ var PlayerIdNext = 0;
 
 function assignTeam(player, court, scene) {
     var assignedTeam;
-    //TEST
-    /*assignedTeam = 0;
-    player.team = assignedTeam;
-    playersTeam1++;*/
-    //TEST
     if (playersTeam1 === playersTeam2) {
         assignedTeam = Math.round(Math.random());
         assignedTeam++;
@@ -48598,7 +48657,6 @@ function assignTeam(player, court, scene) {
     assignPosition(player, court, scene);
 };
 function assignPosition(player, court, scene) {
-    //console.log("player.name: " + player.team);
     var quantityPlayers = 0;
     var x = 0;
     var y = 0;

@@ -17,11 +17,6 @@ var PlayerIdNext = 0;
 
 function assignTeam(player, court, scene) {
     var assignedTeam;
-    //TEST
-    /*assignedTeam = 0;
-    player.team = assignedTeam;
-    playersTeam1++;*/
-    //TEST
     if (playersTeam1 === playersTeam2) {
         assignedTeam = Math.round(Math.random());
         assignedTeam++;
@@ -42,7 +37,6 @@ function assignTeam(player, court, scene) {
     assignPosition(player, court, scene);
 };
 function assignPosition(player, court, scene) {
-    //console.log("player.name: " + player.team);
     var quantityPlayers = 0;
     var x = 0;
     var y = 0;

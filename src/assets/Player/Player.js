@@ -12,9 +12,13 @@ const SHOOT_MIN_FORCE = 5;
 const ACCELERATION = 800;
 const BALL_CATCH_DISTANCE = 285;
 const BALL_HIT_DISTANCE = 110;
+const BALL_HIT_FAIRNESS = 150;
+//HIT PROPS
+const HITTED_DEBUFF = 0.5;
+const HITTED_COOLDOWN = 8.35;
 //DASH PROPS
 const DASH_VELOCITY = 300;
-const DASH_COOLDOWN = 0.5;
+const DASH_COOLDOWN = 3.77;
 
 const FRICTION = 10;
 const DISTANCE_TO_OUT_OF_BOUNDS = 9;
@@ -60,7 +64,7 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     //Controls that needs to be constantly checked
     var distanceToBall;
     var gotBall = false;
-    //Player vars 
+    //Control vars 
     var moveUp = false;
     var moveDown = false;
     var moveRight = false;
@@ -73,6 +77,11 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     var shootForce = 0;
     var dashActive = true;
     var isDashing = false;
+    var isHitted = false;
+    var hitDebuff = 1;
+    var isDead = false;
+    var canBeHitted = true;
+
 
     //Player Attributes 
     //Player Components
@@ -180,15 +189,29 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     };
 
     this.update = function (dt) {
+        if (isDead)
+            return;
         if (!isPlayer) {
             //TEST FOR BOTS
             distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
-            if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team){
-                console.log("BOT HAVE BEEN HITTED");
-                scene.remove(mesh);
-            }  
+            if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted)
+                canBeHitted = true;
+            if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
+                if (canBeHitted) {
+                    canBeHitted = false;
+                    if (isHitted) {
+                        isDead = true;
+                        scene.remove(mesh);
+                        return;
+                    }
+                    isHitted = true;
+                }
+            }
             //TEST FOR BOTS
-
+            if (isHitted && hitDebuff !== HITTED_DEBUFF) {
+                hitDebuff = HITTED_DEBUFF;
+                setTimeout(function () { hitDebuff = 1; isHitted = false; }, (HITTED_COOLDOWN * 1000));
+            }
             return;
         }
 
@@ -200,8 +223,20 @@ function Player(Id, scene, Camera, ball, isPlayer) {
         }
 
         distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
-        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team)
-            console.log("YOU HAVE BEEN HITTED");
+        if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted)
+            canBeHitted = true;
+        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
+            if (canBeHitted) {
+                canBeHitted = false;
+                if (isHitted) {
+                    isDead = true;
+                    scene.remove(mesh);
+                    return;
+                }
+                isHitted = true;
+            }
+        }
+
         //Player movement
         if (velocity.x != 0) {
             if ((velocity.x > 0 && velocity.x <= 0.1) || (velocity.x < 0 && velocity.x >= -0.1))
@@ -236,6 +271,10 @@ function Player(Id, scene, Camera, ball, isPlayer) {
                 isDashing = true;
             }
         }
+        if (isHitted && hitDebuff !== HITTED_DEBUFF) {
+            hitDebuff = HITTED_DEBUFF;
+            setTimeout(function () { hitDebuff = 1; isHitted = false; }, (HITTED_COOLDOWN * 1000));
+        }
         if (velocity.x != 0 || velocity.y != 0) {
             if (isDashing) {
                 isDashing = false;
@@ -243,7 +282,7 @@ function Player(Id, scene, Camera, ball, isPlayer) {
                 makeDash = false;
                 setTimeout(function () { dashActive = true; }, (DASH_COOLDOWN * 1000));
             }
-            this.translate(velocity.x * dt, velocity.y * dt);
+            this.translate(velocity.x * dt * hitDebuff, velocity.y * dt * hitDebuff);
         }
     };
 };

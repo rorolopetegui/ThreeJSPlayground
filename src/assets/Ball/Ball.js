@@ -98,6 +98,32 @@ function Ball(scene) {
         stopMovement = true;
     };
 
+    //TEST
+    var testBall = false;
+    var minVel = 10;
+    var MAX = 550;
+    var MIN = 300;
+    var interval = 500;
+    var plusOrMinus;
+    if (testBall) {
+        setInterval(function () {
+            
+            if (velocity.x <= minVel) {
+                this.teamShootMe = 1;
+                plusOrMinus = Math.random() < 0.5 ? -1 : 1;
+                velocity.x = Math.round(Math.random() * (MAX - MIN) + MIN) * plusOrMinus;
+                
+            }
+
+            if (velocity.y <= minVel) {
+                this.teamShootMe = 1;
+                plusOrMinus = Math.random() < 0.5 ? -1 : 1;
+                velocity.y = Math.round(Math.random() * (MAX - MIN) + MIN) * plusOrMinus;
+            }
+
+        }, interval);
+    }
+    //TEST
     this.update = function (dt) {
         //Ball movement
         if (velocity.x != 0) {
