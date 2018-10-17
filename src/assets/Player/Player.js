@@ -4,6 +4,7 @@ import { PlayerController } from '../../scripts/PlayerController';
 import { PlayerMesh } from './PlayerMesh';
 
 //Game Constants
+const STATE_NORMAL_COLOR = 0xffff00;
 const DISTANCE_BALL_TO_PLAYER = 10;
 const OUT_OF_BOUNDS = false;
 const SHOOT_MAX_TIME = 0.86;
@@ -13,6 +14,12 @@ const ACCELERATION = 800;
 const BALL_CATCH_DISTANCE = 285;
 const BALL_HIT_DISTANCE = 110;
 const BALL_HIT_FAIRNESS = 150;
+const DEFENSE_POWER_COLOR = 0xa80038;
+const DEFENSE_POWER_COOLDOWN = 4.45;
+const DEFENSE_POWER_ACTION_TIME = 0.28;
+//Difference is it a pass from your teammates
+const CATCH_POWER_COOLDOWN = 1;
+const CATCH_POWER_ACTION_TIME = 0.5;
 //HIT PROPS
 const HITTED_DEBUFF = 0.5;
 const HITTED_COOLDOWN = 8.35;
@@ -50,6 +57,8 @@ function moveBallToFront(player, ball, team) {
         ball.position.set(x + DISTANCE_BALL_TO_PLAYER, y, 0.5);
     }
 }
+
+
 function Player(Id, scene, Camera, ball, isPlayer) {
     //Atts
     this.ID = Id;
@@ -81,6 +90,8 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     var hitDebuff = 1;
     var isDead = false;
     var canBeHitted = true;
+    var catchActive = true;
+    var isCatching = false;
 
 
     //Player Attributes 
@@ -112,11 +123,11 @@ function Player(Id, scene, Camera, ball, isPlayer) {
             gotBall = false;
             shootingCounter = 0;
         } else {
-            if (distanceToBall < BALL_CATCH_DISTANCE) {
-                gameBall.stopMovement();
-                moveBallToFront(mesh, gameBall.getMesh(), this.team);
-                gotBall = true;
-            }
+            var teamOwnBall = gameBall.teamShooted();
+            if (teamOwnBall === this.team || teamOwnBall === 0)
+                catchBall();
+            else
+                defensePower();
         }
     };
     this.moveUp = function (move) {
@@ -214,7 +225,12 @@ function Player(Id, scene, Camera, ball, isPlayer) {
             }
             return;
         }
-
+        //Catching ball mechanics
+        if (isCatching && distanceToBall < BALL_CATCH_DISTANCE) {
+            gameBall.stopMovement();
+            moveBallToFront(mesh, gameBall.getMesh(), this.team);
+            gotBall = true;
+        }
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
@@ -285,6 +301,35 @@ function Player(Id, scene, Camera, ball, isPlayer) {
             this.translate(velocity.x * dt * hitDebuff, velocity.y * dt * hitDebuff);
         }
     };
+
+    function defensePower() {
+        if (catchActive) {
+            catchActive = false;
+            isCatching = true;
+            mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
+            setTimeout(function () {
+                isCatching = false;
+                mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
+            }, (DEFENSE_POWER_ACTION_TIME * 1000));
+            setTimeout(function () {
+                catchActive = true;
+            }, (DEFENSE_POWER_COOLDOWN * 1000));
+        }
+    };
+    function catchBall() {
+        if (catchActive) {
+            catchActive = false;
+            isCatching = true;
+            mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
+            setTimeout(function () {
+                isCatching = false;
+                mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
+            }, (CATCH_POWER_ACTION_TIME * 1000));
+            setTimeout(function () {
+                catchActive = true;
+            }, (CATCH_POWER_COOLDOWN * 1000));
+        }
+    }
 };
 
 

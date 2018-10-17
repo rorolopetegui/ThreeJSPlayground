@@ -47931,8 +47931,9 @@ var _PlayerController = require('../../scripts/PlayerController');
 var _PlayerMesh = require('./PlayerMesh');
 
 //Game Constants
-var DISTANCE_BALL_TO_PLAYER = 10; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var STATE_NORMAL_COLOR = 0xffff00; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 
+var DISTANCE_BALL_TO_PLAYER = 10;
 var OUT_OF_BOUNDS = false;
 var SHOOT_MAX_TIME = 0.86;
 var SHOOT_MAX_FORCE = 600;
@@ -47941,6 +47942,12 @@ var ACCELERATION = 800;
 var BALL_CATCH_DISTANCE = 285;
 var BALL_HIT_DISTANCE = 110;
 var BALL_HIT_FAIRNESS = 150;
+var DEFENSE_POWER_COLOR = 0xa80038;
+var DEFENSE_POWER_COOLDOWN = 4.45;
+var DEFENSE_POWER_ACTION_TIME = 0.28;
+//Difference is it a pass from your teammates
+var CATCH_POWER_COOLDOWN = 1;
+var CATCH_POWER_ACTION_TIME = 0.5;
 //HIT PROPS
 var HITTED_DEBUFF = 0.5;
 var HITTED_COOLDOWN = 8.35;
@@ -47978,6 +47985,7 @@ function moveBallToFront(player, ball, team) {
         ball.position.set(x + DISTANCE_BALL_TO_PLAYER, y, 0.5);
     }
 }
+
 function Player(Id, scene, Camera, ball, isPlayer) {
     //Atts
     this.ID = Id;
@@ -48009,6 +48017,8 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     var hitDebuff = 1;
     var isDead = false;
     var canBeHitted = true;
+    var catchActive = true;
+    var isCatching = false;
 
     //Player Attributes 
     //Player Components
@@ -48035,11 +48045,8 @@ function Player(Id, scene, Camera, ball, isPlayer) {
             gotBall = false;
             shootingCounter = 0;
         } else {
-            if (distanceToBall < BALL_CATCH_DISTANCE) {
-                gameBall.stopMovement();
-                moveBallToFront(mesh, gameBall.getMesh(), this.team);
-                gotBall = true;
-            }
+            var teamOwnBall = gameBall.teamShooted();
+            if (teamOwnBall === this.team || teamOwnBall === 0) catchBall();else defensePower();
         }
     };
     this.moveUp = function (move) {
@@ -48134,7 +48141,12 @@ function Player(Id, scene, Camera, ball, isPlayer) {
             }
             return;
         }
-
+        //Catching ball mechanics
+        if (isCatching && distanceToBall < BALL_CATCH_DISTANCE) {
+            gameBall.stopMovement();
+            moveBallToFront(mesh, gameBall.getMesh(), this.team);
+            gotBall = true;
+        }
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
@@ -48201,6 +48213,35 @@ function Player(Id, scene, Camera, ball, isPlayer) {
             this.translate(velocity.x * dt * hitDebuff, velocity.y * dt * hitDebuff);
         }
     };
+
+    function defensePower() {
+        if (catchActive) {
+            catchActive = false;
+            isCatching = true;
+            mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
+            setTimeout(function () {
+                isCatching = false;
+                mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
+            }, DEFENSE_POWER_ACTION_TIME * 1000);
+            setTimeout(function () {
+                catchActive = true;
+            }, DEFENSE_POWER_COOLDOWN * 1000);
+        }
+    };
+    function catchBall() {
+        if (catchActive) {
+            catchActive = false;
+            isCatching = true;
+            mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
+            setTimeout(function () {
+                isCatching = false;
+                mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
+            }, CATCH_POWER_ACTION_TIME * 1000);
+            setTimeout(function () {
+                catchActive = true;
+            }, CATCH_POWER_COOLDOWN * 1000);
+        }
+    }
 };
 
 exports.Player = Player;
@@ -48223,9 +48264,9 @@ var BOT_BODY_COLOR = 0xB4EEB4;
 function PlayerMesh(isPlayer) {
     //Atts
 
-    /*const indicatorSize = 1;
-    const indicatorTriangles = 8;
-    const indicatorColor = 0x00ff00;*/
+    var indicatorSize = 2;
+    var indicatorTriangles = 8;
+    var indicatorColor = 0xffff00;
     //Atts
     var player = new _three.Object3D();
     player.name = "PLAYER_WRAPPER";
@@ -48237,16 +48278,18 @@ function PlayerMesh(isPlayer) {
     var player_body_material = new _three.MeshBasicMaterial({ color: PLAYER_BODY_COLOR });
     if (!isPlayer) player_body_material = new _three.MeshBasicMaterial({ color: BOT_BODY_COLOR });
     var player_body_mesh = new _three.Mesh(player_body_geometry, player_body_material);
+    player_body_mesh.name = "BODY_MESH";
     playerMaterials.add(player_body_mesh);
     /*player_body_mesh.updateMatrix();
     player_geometry.merge(player_body_mesh.geometry, player_body_mesh.matrix, 0);*/
 
-    /*const player_indicator_geometry = new CircleGeometry(indicatorSize, indicatorTriangles);
-    const player_indicator_material = new MeshBasicMaterial({ color: indicatorColor });
-    const player_indicator_mesh = new Mesh(player_indicator_geometry, player_indicator_material);
+    var player_indicator_geometry = new _three.CircleGeometry(indicatorSize, indicatorTriangles);
+    var player_indicator_material = new _three.MeshBasicMaterial({ color: indicatorColor });
+    var player_indicator_mesh = new _three.Mesh(player_indicator_geometry, player_indicator_material);
+    player_indicator_mesh.name = "ACTION_STATE";
     //player_indicator_mesh.z = 2;
-    player_indicator_mesh.position.set(0, 3, 0);
-    playerMaterials.add(player_indicator_mesh);*/
+    //player_indicator_mesh.position.set(0, 3, 0);
+    playerMaterials.add(player_indicator_mesh);
     player.add(playerMaterials);
 
     player.position.set(0, 0, 0.1);
@@ -48866,7 +48909,6 @@ function PlayerController(player, sCamera) {
         }
     };
     var onMouseDown = function onMouseDown() {
-
         Player.onMouseDown();
     };
     var vec = new _three.Vector3(); // create once and reuse

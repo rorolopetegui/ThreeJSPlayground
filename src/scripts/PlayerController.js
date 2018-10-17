@@ -3,7 +3,7 @@ function PlayerController(player, sCamera) {
     var Player = player;
     var Camera = sCamera;
     var onKeyDown = function (event) {
-        switch (event.keyCode) {
+        switch (event.keyCode) { 
             case 32: //Space //Dash
                 Player.makeDash(true);
                 break;
@@ -49,7 +49,6 @@ function PlayerController(player, sCamera) {
         }
     };
     var onMouseDown = function () {
-
         Player.onMouseDown();
     };
     var vec = new Vector3(); // create once and reuse
@@ -70,8 +69,6 @@ function PlayerController(player, sCamera) {
         pos.x -= Player.getMesh().position.x;
         pos.y -= Player.getMesh().position.y;
         Player.onMouseUp(pos.x, pos.y);
-
-
     };
 
     document.addEventListener('keydown', onKeyDown, false);
