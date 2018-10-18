@@ -59,7 +59,7 @@ function moveBallToFront(player, ball, team) {
 }
 
 
-function Player(Id, scene, Camera, ball, isPlayer) {
+function Player(Id, position, ball, scene, isPlayer) {
     //Atts
     this.ID = Id;
     this.isPlayer = isPlayer;
@@ -68,6 +68,7 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     //Save Scene in case that needed
     var Scene = scene;
     var courtLines = Scene.getObjectByName("COURT_LINES");
+    var Camera = Scene.getObjectByName("Camera");
     //Saves the ball so we can call static methods in it
     const gameBall = ball;
     //Controls that needs to be constantly checked
@@ -97,10 +98,15 @@ function Player(Id, scene, Camera, ball, isPlayer) {
     //Player Attributes 
     //Player Components
     const mesh = PlayerMesh(isPlayer);
-    if (isPlayer)
+    if (isPlayer){
         mesh.name = "Player";
-    else
+        mesh.position.set(position.x, position.y, 0);
+    }else{
         mesh.name = "Bot";
+        mesh.position.set(position.x, position.y, 0.1);
+    }
+        
+    
     //Components to the scene
     Scene.add(mesh);
     if (isPlayer)

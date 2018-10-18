@@ -35,9 +35,9 @@ function checkOutOfBounds(courtLines, vec) {
     return distance;
 }
 
-function Ball(scene) {
+function Ball(scene, gameBall) {
     //Ball atts
-    this.teamShootMe = 0;
+    this.teamShootMe = gameBall.teamShootMe;
     //Helpers
     //Save Scene in case that needed
     var Scene = scene;
@@ -51,6 +51,7 @@ function Ball(scene) {
     //Ball Components
     const mesh = BallMesh();
     mesh.name = "Ball";
+    mesh.position.set(gameBall.position.x,gameBall.position.y,0);
     //Components to the scene
     Scene.add(mesh);
     //setters
