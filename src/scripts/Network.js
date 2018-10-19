@@ -26,10 +26,13 @@ function Network(scene, court) {
         if (gameBall !== undefined)
             self.moveBall(data);
     });
-
+    var test = 0;
     this.moveBall = function (data) {
-        //console.log(data);
+        //if (test < 100)
+        //console.log(data.position.x);
         gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
+        //gameBall.getMesh().position.set(-50, 0, 0);
+        test++;
     };
     this.initializeSubjects = function (data) {
         if (gameBall === undefined) {
