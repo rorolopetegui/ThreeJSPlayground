@@ -67,8 +67,6 @@ function Player(Id, position, ball, scene, isPlayer) {
 
     //Save Scene in case that needed
     var Scene = scene;
-    var courtLines = Scene.getObjectByName("COURT_LINES");
-    var Camera = Scene.getObjectByName("Camera");
     //Saves the ball so we can call static methods in it
     const gameBall = ball;
     //Controls that needs to be constantly checked
@@ -94,13 +92,14 @@ function Player(Id, position, ball, scene, isPlayer) {
     var catchActive = true;
     var isCatching = false;
 
-
-    //Player Attributes 
+    var courtLines;
     //Player Components
     const mesh = PlayerMesh(isPlayer);
     if (isPlayer){
         mesh.name = "Player";
         mesh.position.set(position.x, position.y, 0);
+        courtLines = Scene.getObjectByName("COURT_LINES");
+        PlayerController(this, Scene.getObjectByName("Camera"));
     }else{
         mesh.name = "Bot";
         mesh.position.set(position.x, position.y, 0.1);
@@ -108,9 +107,7 @@ function Player(Id, position, ball, scene, isPlayer) {
         
     
     //Components to the scene
-    Scene.add(mesh);
-    if (isPlayer)
-        PlayerController(this, Camera);
+    Scene.add(mesh);        
 
     //Controls
     this.onMouseDown = function () {

@@ -8,8 +8,6 @@ function Ball(scene, gameBall) {
     //Helpers
     //Save Scene in case that needed
     var Scene = scene;
-    var courtLines = Scene.getObjectByName("COURT_LINES");
-    mostCloseLine = courtLines.getObjectByName("COURT_LINES_TOP_MESH");
     //Ball vars
     var velocity = new Vector3();
     var direction = new Vector3();

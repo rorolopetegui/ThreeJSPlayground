@@ -56376,8 +56376,6 @@ function Ball(scene, gameBall) {
     //Helpers
     //Save Scene in case that needed
     var Scene = scene;
-    var courtLines = Scene.getObjectByName("COURT_LINES");
-    mostCloseLine = courtLines.getObjectByName("COURT_LINES_TOP_MESH");
     //Ball vars
     var velocity = new _three.Vector3();
     var direction = new _three.Vector3();
@@ -56524,8 +56522,6 @@ function Player(Id, position, ball, scene, isPlayer) {
 
     //Save Scene in case that needed
     var Scene = scene;
-    var courtLines = Scene.getObjectByName("COURT_LINES");
-    var Camera = Scene.getObjectByName("Camera");
     //Saves the ball so we can call static methods in it
     var gameBall = ball;
     //Controls that needs to be constantly checked
@@ -56551,12 +56547,14 @@ function Player(Id, position, ball, scene, isPlayer) {
     var catchActive = true;
     var isCatching = false;
 
-    //Player Attributes 
+    var courtLines;
     //Player Components
     var mesh = (0, _PlayerMesh.PlayerMesh)(isPlayer);
     if (isPlayer) {
         mesh.name = "Player";
         mesh.position.set(position.x, position.y, 0);
+        courtLines = Scene.getObjectByName("COURT_LINES");
+        (0, _PlayerController.PlayerController)(this, Scene.getObjectByName("Camera"));
     } else {
         mesh.name = "Bot";
         mesh.position.set(position.x, position.y, 0.1);
@@ -56564,7 +56562,6 @@ function Player(Id, position, ball, scene, isPlayer) {
 
     //Components to the scene
     Scene.add(mesh);
-    if (isPlayer) (0, _PlayerController.PlayerController)(this, Camera);
 
     //Controls
     this.onMouseDown = function () {
@@ -57318,7 +57315,7 @@ function Network(scene, court) {
     var Scene = scene;
     var gameBall;
     //var court = Scene.getObjectByName("Court");
-    var SceneSubjects = [];
+    var SceneSubjects = {};
 
     var socket = _socket2.default.connect('https://somedodgeball.glitch.me');
 
@@ -57331,34 +57328,50 @@ function Network(scene, court) {
     socket.on('Ball-Update', function (data) {
         if (gameBall !== undefined) self.moveBall(data);
     });
-    var test = 0;
-    this.moveBall = function (data) {
-        //if (test < 100)
-        //console.log(data.position.x);
-        gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
-        //gameBall.getMesh().position.set(-50, 0, 0);
-        test++;
-    };
+
+    socket.on('Player-Joined', function (data) {
+        self.createPlayer(data);
+    });
+
+    socket.on('Player-Disconnected', function (id) {
+        self.deletePlayer(id);
+    });
+
     this.initializeSubjects = function (data) {
         if (gameBall === undefined) {
             gameBall = new _Ball.Ball(Scene, data.subjects.gameBall);
-            SceneSubjects.push(gameBall);
+            SceneSubjects["GameBall"] = gameBall;
         }
         if (player === undefined) {
             var auxPlayer = data.subjects.players[data.id];
-            player = new _Player.Player(auxPlayer.id, auxPlayer.position, gameBall, Scene, true);
-            SceneSubjects.push(player);
+            player = new _Player.Player(data.id, auxPlayer.position, gameBall, Scene, true);
+            SceneSubjects[data.id] = player;
         }
-        for (var otherPlayer in data.subjects.players) {
-            if (otherPlayer.id !== player.id) {
-                SceneSubjects.push(new _Player.Player(otherPlayer.id, otherPlayer.position, scene, false));
+        for (var idPlayer in data.subjects.players) {
+            var otherPlayer = data.subjects.players[idPlayer];
+            if (idPlayer !== player.ID) {
+                var newPlayer = new _Player.Player(idPlayer, otherPlayer.position, gameBall, Scene, false);
+                SceneSubjects[idPlayer] = newPlayer;
             }
         };
     };
+    this.moveBall = function (data) {
+        gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
+    };
+    this.createPlayer = function (data) {
+        var newPlayer = new _Player.Player(data.ID, data.position, gameBall, Scene, false);
+        SceneSubjects[data.ID] = newPlayer;
+    };
+    this.deletePlayer = function (id) {
+        if (!SceneSubjects[id]) return;
+        Scene.remove(SceneSubjects[id].getMesh());
+        delete SceneSubjects[id];
+    };
 
     this.update = function (dt) {
-        for (var i = 0; i < SceneSubjects.length; i++) {
-            SceneSubjects[i].update(dt);
+        for (var idSubject in SceneSubjects) {
+            var subject = SceneSubjects[idSubject];
+            subject.update(dt);
         }
     };
 } /*eslint no-unused-vars: ["error", { "args": "none" }]*/

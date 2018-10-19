@@ -11,8 +11,7 @@ function Network(scene, court) {
     var Scene = scene;
     var gameBall;
     //var court = Scene.getObjectByName("Court");
-    var SceneSubjects = [
-    ];
+    var SceneSubjects = {};
 
     var socket = io.connect('https://somedodgeball.glitch.me');
 
@@ -26,36 +25,53 @@ function Network(scene, court) {
         if (gameBall !== undefined)
             self.moveBall(data);
     });
-    var test = 0;
-    this.moveBall = function (data) {
-        //if (test < 100)
-        //console.log(data.position.x);
-        gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
-        //gameBall.getMesh().position.set(-50, 0, 0);
-        test++;
-    };
+
+    socket.on('Player-Joined', function (data) {
+        self.createPlayer(data);
+    });
+
+    socket.on('Player-Disconnected', function (id) {
+        self.deletePlayer(id);
+    });
+
+
     this.initializeSubjects = function (data) {
         if (gameBall === undefined) {
             gameBall = new Ball(Scene, data.subjects.gameBall);
-            SceneSubjects.push(gameBall);
+            SceneSubjects["GameBall"] = gameBall;
         }
         if (player === undefined) {
             var auxPlayer = data.subjects.players[data.id];
-            player = new Player(auxPlayer.id, auxPlayer.position, gameBall, Scene, true);
-            SceneSubjects.push(player);
+            player = new Player(data.id, auxPlayer.position, gameBall, Scene, true);
+            SceneSubjects[data.id] = player;
         }
-        for (var otherPlayer in data.subjects.players) {
-            if (otherPlayer.id !== player.id) {
-                SceneSubjects.push(
-                    new Player(otherPlayer.id, otherPlayer.position, scene, false)
-                );
+        for (var idPlayer in data.subjects.players) {
+            var otherPlayer = data.subjects.players[idPlayer];
+            if (idPlayer !== player.ID) {
+                var newPlayer = new Player(idPlayer, otherPlayer.position, gameBall, Scene, false);
+                SceneSubjects[idPlayer] = newPlayer;
             }
         };
     };
+    this.moveBall = function (data) {
+        gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
+    };
+    this.createPlayer = function (data) {
+        var newPlayer = new Player(data.ID, data.position, gameBall, Scene, false);
+        SceneSubjects[data.ID] = newPlayer;
+    };
+    this.deletePlayer = function (id) {
+        if(!SceneSubjects[id]) return;
+        Scene.remove(SceneSubjects[id].getMesh());
+        delete SceneSubjects[id];
+    };
+    
 
     this.update = function (dt) {
-        for (let i = 0; i < SceneSubjects.length; i++)
-            SceneSubjects[i].update(dt);
+        for(var idSubject in SceneSubjects){
+            var subject = SceneSubjects[idSubject];
+            subject.update(dt);
+        }
     };
 };
 
