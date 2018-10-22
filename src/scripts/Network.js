@@ -6,6 +6,7 @@ import { Ball } from './../assets/Ball/Ball';
 
 
 function Network(scene, court) {
+    var initialize = false;
     var self = this;
     var player;
     var Scene = scene;
@@ -21,17 +22,21 @@ function Network(scene, court) {
         self.initializeSubjects(data);
     });
 
-    socket.on('Ball-Update', function (data) {
-        if (gameBall !== undefined)
-            self.moveBall(data);
-    });
-
     socket.on('Player-Joined', function (data) {
         self.createPlayer(data);
     });
 
     socket.on('Player-Disconnected', function (id) {
         self.deletePlayer(id);
+    });
+
+    socket.on('Ball-Update', function (data) {
+        if (gameBall !== undefined)
+            self.moveBall(data);
+    });
+
+    socket.on('Player-Moved', function (data) {
+        self.movePlayer(data);
     });
 
 
@@ -52,6 +57,7 @@ function Network(scene, court) {
                 SceneSubjects[idPlayer] = newPlayer;
             }
         };
+        initialize = true;
     };
     this.moveBall = function (data) {
         gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
@@ -61,14 +67,36 @@ function Network(scene, court) {
         SceneSubjects[data.ID] = newPlayer;
     };
     this.deletePlayer = function (id) {
-        if(!SceneSubjects[id]) return;
+        if (!SceneSubjects[id]) return;
         Scene.remove(SceneSubjects[id].getMesh());
         delete SceneSubjects[id];
     };
-    
+    this.movePlayer = function (data) {
+        if (!SceneSubjects[data.id]) return;
+        var playerMesh = SceneSubjects[data.id].getMesh();
+        playerMesh.position.set(data.x, data.y, playerMesh.position.z);;
+    };
+
+    function updatePosition() {
+        if (initialize) {
+            var playerMesh = player.getMesh();
+            socket.emit('Player-Moved', { x: playerMesh.position.x, y: playerMesh.position.y });
+        }
+    };
+
+    function updateActions() {
+        if (initialize) {
+            if(player.isCatching){
+                //socket.emit('Player-Moved', { x: playerMesh.position.x, y: playerMesh.position.y });
+            }
+            
+        }
+    };
 
     this.update = function (dt) {
-        for(var idSubject in SceneSubjects){
+        updatePosition();
+        updateActions();
+        for (var idSubject in SceneSubjects) {
             var subject = SceneSubjects[idSubject];
             subject.update(dt);
         }

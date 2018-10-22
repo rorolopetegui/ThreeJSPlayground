@@ -64,6 +64,7 @@ function Player(Id, position, ball, scene, isPlayer) {
     this.ID = Id;
     this.isPlayer = isPlayer;
     this.team = 0;
+    this.isCatching = false;
 
     //Save Scene in case that needed
     var Scene = scene;
@@ -90,7 +91,6 @@ function Player(Id, position, ball, scene, isPlayer) {
     var isDead = false;
     var canBeHitted = true;
     var catchActive = true;
-    var isCatching = false;
 
     var courtLines;
     //Player Components
@@ -126,11 +126,11 @@ function Player(Id, position, ball, scene, isPlayer) {
             gotBall = false;
             shootingCounter = 0;
         } else {
-            var teamOwnBall = gameBall.teamShooted();
+            var teamOwnBall = gameBall.teamShootMe;
             if (teamOwnBall === this.team || teamOwnBall === 0)
-                catchBall();
+                this.catchBall();
             else
-                defensePower();
+                this.defensePower();
         }
     };
     this.moveUp = function (move) {
@@ -205,35 +205,7 @@ function Player(Id, position, ball, scene, isPlayer) {
     this.update = function (dt) {
         if (isDead)
             return;
-        if (!isPlayer) {
-            //TEST FOR BOTS
-            distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
-            if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted)
-                canBeHitted = true;
-            if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
-                if (canBeHitted) {
-                    canBeHitted = false;
-                    if (isHitted) {
-                        isDead = true;
-                        scene.remove(mesh);
-                        return;
-                    }
-                    isHitted = true;
-                }
-            }
-            //TEST FOR BOTS
-            if (isHitted && hitDebuff !== HITTED_DEBUFF) {
-                hitDebuff = HITTED_DEBUFF;
-                setTimeout(function () { hitDebuff = 1; isHitted = false; }, (HITTED_COOLDOWN * 1000));
-            }
-            return;
-        }
-        //Catching ball mechanics
-        if (isCatching && distanceToBall < BALL_CATCH_DISTANCE) {
-            gameBall.stopMovement();
-            moveBallToFront(mesh, gameBall.getMesh(), this.team);
-            gotBall = true;
-        }
+        
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
@@ -305,13 +277,13 @@ function Player(Id, position, ball, scene, isPlayer) {
         }
     };
 
-    function defensePower() {
+    this.defensePower = function() {
         if (catchActive) {
             catchActive = false;
-            isCatching = true;
+            this.isCatching = true;
             mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
             setTimeout(function () {
-                isCatching = false;
+                this.isCatching = false;
                 mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
             }, (DEFENSE_POWER_ACTION_TIME * 1000));
             setTimeout(function () {
@@ -319,13 +291,13 @@ function Player(Id, position, ball, scene, isPlayer) {
             }, (DEFENSE_POWER_COOLDOWN * 1000));
         }
     };
-    function catchBall() {
+    this.catchBall = function() {
         if (catchActive) {
             catchActive = false;
-            isCatching = true;
+            this.isCatching = true;
             mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
             setTimeout(function () {
-                isCatching = false;
+                this.isCatching = false;
                 mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
             }, (CATCH_POWER_ACTION_TIME * 1000));
             setTimeout(function () {

@@ -56519,6 +56519,7 @@ function Player(Id, position, ball, scene, isPlayer) {
     this.ID = Id;
     this.isPlayer = isPlayer;
     this.team = 0;
+    this.isCatching = false;
 
     //Save Scene in case that needed
     var Scene = scene;
@@ -56545,7 +56546,6 @@ function Player(Id, position, ball, scene, isPlayer) {
     var isDead = false;
     var canBeHitted = true;
     var catchActive = true;
-    var isCatching = false;
 
     var courtLines;
     //Player Components
@@ -56580,8 +56580,8 @@ function Player(Id, position, ball, scene, isPlayer) {
             gotBall = false;
             shootingCounter = 0;
         } else {
-            var teamOwnBall = gameBall.teamShooted();
-            if (teamOwnBall === this.team || teamOwnBall === 0) catchBall();else defensePower();
+            var teamOwnBall = gameBall.teamShootMe;
+            if (teamOwnBall === this.team || teamOwnBall === 0) this.catchBall();else this.defensePower();
         }
     };
     this.moveUp = function (move) {
@@ -56652,36 +56652,7 @@ function Player(Id, position, ball, scene, isPlayer) {
 
     this.update = function (dt) {
         if (isDead) return;
-        if (!isPlayer) {
-            //TEST FOR BOTS
-            distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
-            if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted) canBeHitted = true;
-            if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
-                if (canBeHitted) {
-                    canBeHitted = false;
-                    if (isHitted) {
-                        isDead = true;
-                        scene.remove(mesh);
-                        return;
-                    }
-                    isHitted = true;
-                }
-            }
-            //TEST FOR BOTS
-            if (isHitted && hitDebuff !== HITTED_DEBUFF) {
-                hitDebuff = HITTED_DEBUFF;
-                setTimeout(function () {
-                    hitDebuff = 1;isHitted = false;
-                }, HITTED_COOLDOWN * 1000);
-            }
-            return;
-        }
-        //Catching ball mechanics
-        if (isCatching && distanceToBall < BALL_CATCH_DISTANCE) {
-            gameBall.stopMovement();
-            moveBallToFront(mesh, gameBall.getMesh(), this.team);
-            gotBall = true;
-        }
+
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
@@ -56749,13 +56720,13 @@ function Player(Id, position, ball, scene, isPlayer) {
         }
     };
 
-    function defensePower() {
+    this.defensePower = function () {
         if (catchActive) {
             catchActive = false;
-            isCatching = true;
+            this.isCatching = true;
             mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
             setTimeout(function () {
-                isCatching = false;
+                this.isCatching = false;
                 mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
             }, DEFENSE_POWER_ACTION_TIME * 1000);
             setTimeout(function () {
@@ -56763,20 +56734,20 @@ function Player(Id, position, ball, scene, isPlayer) {
             }, DEFENSE_POWER_COOLDOWN * 1000);
         }
     };
-    function catchBall() {
+    this.catchBall = function () {
         if (catchActive) {
             catchActive = false;
-            isCatching = true;
+            this.isCatching = true;
             mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
             setTimeout(function () {
-                isCatching = false;
+                this.isCatching = false;
                 mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
             }, CATCH_POWER_ACTION_TIME * 1000);
             setTimeout(function () {
                 catchActive = true;
             }, CATCH_POWER_COOLDOWN * 1000);
         }
-    }
+    };
 };
 
 exports.Player = Player;
@@ -57310,6 +57281,7 @@ var _Ball = require('./../assets/Ball/Ball');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function Network(scene, court) {
+    var initialize = false;
     var self = this;
     var player;
     var Scene = scene;
@@ -57325,16 +57297,20 @@ function Network(scene, court) {
         self.initializeSubjects(data);
     });
 
-    socket.on('Ball-Update', function (data) {
-        if (gameBall !== undefined) self.moveBall(data);
-    });
-
     socket.on('Player-Joined', function (data) {
         self.createPlayer(data);
     });
 
     socket.on('Player-Disconnected', function (id) {
         self.deletePlayer(id);
+    });
+
+    socket.on('Ball-Update', function (data) {
+        if (gameBall !== undefined) self.moveBall(data);
+    });
+
+    socket.on('Player-Moved', function (data) {
+        self.movePlayer(data);
     });
 
     this.initializeSubjects = function (data) {
@@ -57354,6 +57330,7 @@ function Network(scene, court) {
                 SceneSubjects[idPlayer] = newPlayer;
             }
         };
+        initialize = true;
     };
     this.moveBall = function (data) {
         gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
@@ -57367,8 +57344,30 @@ function Network(scene, court) {
         Scene.remove(SceneSubjects[id].getMesh());
         delete SceneSubjects[id];
     };
+    this.movePlayer = function (data) {
+        if (!SceneSubjects[data.id]) return;
+        var playerMesh = SceneSubjects[data.id].getMesh();
+        playerMesh.position.set(data.x, data.y, playerMesh.position.z);;
+    };
+
+    function updatePosition() {
+        if (initialize) {
+            var playerMesh = player.getMesh();
+            socket.emit('Player-Moved', { x: playerMesh.position.x, y: playerMesh.position.y });
+        }
+    };
+
+    function updateActions() {
+        if (initialize) {
+            if (player.isCatching) {
+                //socket.emit('Player-Moved', { x: playerMesh.position.x, y: playerMesh.position.y });
+            }
+        }
+    };
 
     this.update = function (dt) {
+        updatePosition();
+        updateActions();
         for (var idSubject in SceneSubjects) {
             var subject = SceneSubjects[idSubject];
             subject.update(dt);
