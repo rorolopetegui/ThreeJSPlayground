@@ -5,15 +5,11 @@ import { PlayerMesh } from './PlayerMesh';
 
 //Game Constants
 const STATE_NORMAL_COLOR = 0xffff00;
-const DISTANCE_BALL_TO_PLAYER = 10;
 const OUT_OF_BOUNDS = false;
 const SHOOT_MAX_TIME = 0.86;
 const SHOOT_MAX_FORCE = 600;
 const SHOOT_MIN_FORCE = 5;
 const ACCELERATION = 800;
-const BALL_CATCH_DISTANCE = 285;
-const BALL_HIT_DISTANCE = 110;
-const BALL_HIT_FAIRNESS = 150;
 const DEFENSE_POWER_COLOR = 0xa80038;
 const DEFENSE_POWER_COOLDOWN = 4.45;
 const DEFENSE_POWER_ACTION_TIME = 0.28;
@@ -48,30 +44,17 @@ function checkDistanceToLine(line, vec) {
     return distance;
 }
 
-function moveBallToFront(player, ball, team) {
-    var x = player.position.x;
-    var y = player.position.y;
-    if (team === 0) {
-        ball.position.set(x - DISTANCE_BALL_TO_PLAYER, y, 0.5);
-    } else {
-        ball.position.set(x + DISTANCE_BALL_TO_PLAYER, y, 0.5);
-    }
-}
-
-
 function Player(Id, position, ball, scene, isPlayer) {
     //Atts
     this.ID = Id;
     this.isPlayer = isPlayer;
     this.team = 0;
-    this.isCatching = false;
+    
 
     //Save Scene in case that needed
     var Scene = scene;
     //Saves the ball so we can call static methods in it
     const gameBall = ball;
-    //Controls that needs to be constantly checked
-    var distanceToBall;
     var gotBall = false;
     //Control vars 
     var moveUp = false;
@@ -89,8 +72,8 @@ function Player(Id, position, ball, scene, isPlayer) {
     var isHitted = false;
     var hitDebuff = 1;
     var isDead = false;
-    var canBeHitted = true;
     var catchActive = true;
+    var isCatching = false;
 
     var courtLines;
     //Player Components
@@ -149,6 +132,12 @@ function Player(Id, position, ball, scene, isPlayer) {
         if (dashActive)
             makeDash = dash;
     };
+    this.getCatchAction = function(){
+        return isCatching;
+    };
+    this.gotBall = function(){
+        return gotBall;
+    };
     this.translate = function (x, y) {
         //Performs checks if the player can move in that direction
         if (!OUT_OF_BOUNDS && isPlayer) {
@@ -187,6 +176,7 @@ function Player(Id, position, ball, scene, isPlayer) {
         if (y !== 0)
             mesh.translateY(y);
         if (gotBall) {
+            console.log("GOT BALL");
             gameBall.getMesh().translateX(x);
             gameBall.getMesh().translateY(y);
         }
@@ -203,28 +193,13 @@ function Player(Id, position, ball, scene, isPlayer) {
     };
 
     this.update = function (dt) {
-        if (isDead)
+        if (isDead || !isPlayer)
             return;
-        
+       
         //Throwing ball mechanics
         if (isShooting) {
             if (shootingCounter <= SHOOT_MAX_TIME) {
                 shootingCounter += dt;
-            }
-        }
-
-        distanceToBall = mesh.position.distanceToSquared(gameBall.getMesh().position);
-        if (distanceToBall >= BALL_HIT_FAIRNESS && !canBeHitted)
-            canBeHitted = true;
-        if (distanceToBall <= BALL_HIT_DISTANCE && gameBall.teamShooted() != 0 && gameBall.teamShooted() != this.team) {
-            if (canBeHitted) {
-                canBeHitted = false;
-                if (isHitted) {
-                    isDead = true;
-                    scene.remove(mesh);
-                    return;
-                }
-                isHitted = true;
             }
         }
 
@@ -280,10 +255,10 @@ function Player(Id, position, ball, scene, isPlayer) {
     this.defensePower = function() {
         if (catchActive) {
             catchActive = false;
-            this.isCatching = true;
+            isCatching = true;
             mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
             setTimeout(function () {
-                this.isCatching = false;
+                isCatching = false;
                 mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
             }, (DEFENSE_POWER_ACTION_TIME * 1000));
             setTimeout(function () {
@@ -294,17 +269,17 @@ function Player(Id, position, ball, scene, isPlayer) {
     this.catchBall = function() {
         if (catchActive) {
             catchActive = false;
-            this.isCatching = true;
+            isCatching = true;
             mesh.getObjectByName("ACTION_STATE").material.color.setHex(DEFENSE_POWER_COLOR);
             setTimeout(function () {
-                this.isCatching = false;
+                isCatching = false;
                 mesh.getObjectByName("ACTION_STATE").material.color.setHex(STATE_NORMAL_COLOR);
             }, (CATCH_POWER_ACTION_TIME * 1000));
             setTimeout(function () {
                 catchActive = true;
             }, (CATCH_POWER_COOLDOWN * 1000));
         }
-    }
+    };
 };
 
 

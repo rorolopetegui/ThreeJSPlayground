@@ -60,7 +60,13 @@ function Network(scene, court) {
         initialize = true;
     };
     this.moveBall = function (data) {
-        gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
+        if (player === undefined) {
+            gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
+        } else {
+            if(!player.gotBall()){
+                gameBall.getMesh().position.set(data.position.x, data.position.y, 0);
+            }
+        }
     };
     this.createPlayer = function (data) {
         var newPlayer = new Player(data.ID, data.position, gameBall, Scene, false);
@@ -84,12 +90,20 @@ function Network(scene, court) {
         }
     };
 
+    var CatchSendToServer = false;
     function updateActions() {
         if (initialize) {
-            if(player.isCatching){
-                //socket.emit('Player-Moved', { x: playerMesh.position.x, y: playerMesh.position.y });
+
+            var catchAction = player.getCatchAction();
+            if (catchAction && !CatchSendToServer) {
+                CatchSendToServer = true;
+                socket.emit('Player-Catching');
             }
-            
+
+
+            //reset control vars
+            if (!catchAction)
+                CatchSendToServer = false;
         }
     };
 
