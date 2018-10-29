@@ -56315,7 +56315,7 @@ var _PrincipalScene = require('./scenes/PrincipalScene');
 
 var _TestScene = require('./scenes/TestScene');
 
-var testEnabled = false; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+var testEnabled = true; /*eslint no-unused-vars: ["error", { "args": "none" }]*/
 //import * as THREE from 'three';
 
 
@@ -56794,7 +56794,13 @@ exports.PlayerMesh = PlayerMesh;
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-/*eslint no-unused-vars: ["error", { "args": "none" }]*/
+exports.Test = undefined;
+
+var _three = require("three");
+
+var THREE = _interopRequireWildcard(_three);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 //import { Player } from './../assets/Player/Player';
 //import { Ball } from './../assets/Ball/Ball';
@@ -56805,7 +56811,13 @@ Object.defineProperty(exports, "__esModule", {
 
 function Test(scene) {
     console.log("Testing Mode Enabled");
-    var SceneSubjects = [];
+    var spriteMap = new THREE.TextureLoader().load("./Sprites/megaman.png");
+    var spriteMaterial = new THREE.SpriteMaterial({ map: spriteMap, color: 0xffffff });
+    var sprite = new THREE.Sprite(spriteMaterial);
+    scene.add(sprite);
+    /*var SceneSubjects = [
+        sprite,
+    ];*/
     /*
     const court = new Court(scene);
     const ball = new Ball(scene, { teamShootMe: 0, position: { x: 0, y: 0 } });
@@ -56816,16 +56828,13 @@ function Test(scene) {
     SceneSubjects.push(player);
     */
 
-    this.update = function (dt) {
-        for (var i = 0; i < SceneSubjects.length; i++) {
-            SceneSubjects[i].update(dt);
-        }
-    };
-};
+    this.update = function (dt) {};
+} /*eslint no-unused-vars: ["error", { "args": "none" }]*/
+;
 
 exports.Test = Test;
 
-},{}],57:[function(require,module,exports){
+},{"three":48}],57:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

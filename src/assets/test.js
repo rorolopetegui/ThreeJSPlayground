@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: ["error", { "args": "none" }]*/
-
+import * as THREE from 'three';
 //import { Player } from './../assets/Player/Player';
 //import { Ball } from './../assets/Ball/Ball';
 //import { Court } from './../assets/environment/Court/Court';
@@ -9,8 +9,13 @@
 
 function Test(scene) {
     console.log("Testing Mode Enabled");
-    var SceneSubjects = [
-    ];
+    var spriteMap = new THREE.TextureLoader().load("./Sprites/megaman.png");
+    var spriteMaterial = new THREE.SpriteMaterial({ map: spriteMap, color: 0xffffff });
+    var sprite = new THREE.Sprite(spriteMaterial);
+    scene.add(sprite);
+    /*var SceneSubjects = [
+        sprite,
+    ];*/
     /*
     const court = new Court(scene);
     const ball = new Ball(scene, { teamShootMe: 0, position: { x: 0, y: 0 } });
@@ -22,8 +27,7 @@ function Test(scene) {
 */
 
     this.update = function (dt) {
-        for (let i = 0; i < SceneSubjects.length; i++)
-            SceneSubjects[i].update(dt);
+        
     };
 };
 

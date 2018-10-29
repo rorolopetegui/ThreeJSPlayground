@@ -3,7 +3,7 @@
 import { Clock } from 'three';
 import { PrincipalScene } from './scenes/PrincipalScene';
 import { TestScene } from './scenes/TestScene';
-var testEnabled = false;
+var testEnabled = true;
 
 function SceneManager(canvas) {
 
